@@ -9,6 +9,7 @@ import {
   Clock3,
   Plus,
   ShieldCheck,
+  Sparkles,
   Wrench,
   X,
 } from "lucide-react";
@@ -135,12 +136,39 @@ function ListPage({ page }: { page: Exclude<Page, "dashboard"> }) {
 
 function relationLabel(value: unknown) { if (value && typeof value === "object") return String((value as Record<string, unknown>).nickname ?? (value as Record<string, unknown>).name ?? "-"); return value === null || value === undefined || value === "" ? "-" : String(value); }
 
+function analyzeRequest(problem: string) {
+  const text = problem.toLowerCase();
+  const isAccess = /(password|login|sign in|account|access|permission|mfa|vpn)/.test(text);
+  const isHardware = /(laptop|computer|monitor|keyboard|mouse|headset|phone|printer|screen|battery|charger)/.test(text);
+  const isSoftware = /(software|application|app|install|license|outlook|teams|browser|excel|word)/.test(text);
+  const isNetwork = /(wifi|wi-fi|network|internet|connection|vpn|slow)/.test(text);
+  const priority = /(urgent|critical|down|outage|cannot work|can't work|blocked|security)/.test(text) ? "High" : /(soon|important|slow|intermittent)/.test(text) ? "Medium" : "Low";
+  const category = isAccess ? "Access & identity" : isNetwork ? "Network & connectivity" : isHardware ? "Hardware" : isSoftware ? "Software & licensing" : "General IT support";
+  const requestType = /(new|need|request|install|replacement|replace|upgrade)/.test(text) ? "Service request" : "Incident";
+  const resolution = isAccess
+    ? "Confirm the affected account and access level, then reset credentials or review the requested permission."
+    : isNetwork
+      ? "Check the device connection and VPN status first, then collect network diagnostics if the issue continues."
+      : isHardware
+        ? "Run a basic hardware check and arrange a replacement or repair if the fault is confirmed."
+        : isSoftware
+          ? "Verify the affected application, license entitlement, and current version before applying a fix."
+          : "Review the reported symptoms, confirm the affected service, and route the request to the appropriate IT queue.";
+  return { requestType, priority, category, resolution };
+}
+
 function CreateDialog({ page, open, onOpenChange, onCreated }: { page: Exclude<Page, "dashboard">; open: boolean; onOpenChange: (open: boolean) => void; onCreated: () => void }) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [requestValues, setRequestValues] = useState<Record<string, string>>({});
+  const [problem, setProblem] = useState("");
+  const [suggestedResolution, setSuggestedResolution] = useState("");
+  const [analyzing, setAnalyzing] = useState(false);
   const config = pageConfig[page];
-  const submit = async (event: FormEvent<HTMLFormElement>) => { event.preventDefault(); const values: Record<string, unknown> = Object.fromEntries(new FormData(event.currentTarget)); for (const [key, value] of Object.entries(values)) if (value === "") delete values[key]; ["seatsTotal", "seatsUsed", "cost"].forEach((key) => { if (typeof values[key] === "string") values[key] = Number(values[key]); }); setSaving(true); setError(""); try { await nocobaseClient.action(config.resource, "create", { method: "POST", body: values }); onOpenChange(false); onCreated(); } catch (cause) { setError((cause as Error).message); } finally { setSaving(false); } };
-  return <Dialog open={open} onOpenChange={onOpenChange}><DialogContent className="max-h-[88vh] max-w-xl overflow-y-auto border-border bg-popover p-4 sm:max-w-xl"><DialogHeader><DialogTitle>{config.action}</DialogTitle><DialogDescription>Create directly in the existing {config.resource} collection.</DialogDescription></DialogHeader><form onSubmit={submit} className="grid gap-3 sm:grid-cols-2">{fieldConfig[page].map(([name, label, type]) => <label key={name} className={`grid gap-1 text-xs font-medium ${type === "textarea" ? "sm:col-span-2" : ""}`}><span>{label}</span>{type === "textarea" ? <Textarea name={name} className="min-h-20" /> : <Input name={name} type={type} required={name === "name" || name === "subject" || name === "issue"} />}</label>)}{error && <div className="sm:col-span-2 text-xs text-rose-300">{error}</div>}<div className="flex justify-end gap-2 sm:col-span-2"><Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button><Button type="submit" disabled={saving}>{saving ? "Saving..." : config.action}</Button></div></form></DialogContent></Dialog>;
+  const close = (nextOpen: boolean) => { if (!nextOpen) { setRequestValues({}); setProblem(""); setSuggestedResolution(""); setError(""); } onOpenChange(nextOpen); };
+  const fillWithAi = () => { if (!problem.trim()) { setError("Describe the problem first so AI assist can classify it."); return; } setAnalyzing(true); setError(""); window.setTimeout(() => { const result = analyzeRequest(problem); setRequestValues((values) => ({ ...values, requestType: result.requestType, priority: result.priority, category: result.category, description: values.description || problem })); setSuggestedResolution(result.resolution); setAnalyzing(false); }, 350); };
+  const submit = async (event: FormEvent<HTMLFormElement>) => { event.preventDefault(); const values: Record<string, unknown> = page === "requests" ? { ...requestValues } : Object.fromEntries(new FormData(event.currentTarget)); for (const [key, value] of Object.entries(values)) if (value === "") delete values[key]; ["seatsTotal", "seatsUsed", "cost"].forEach((key) => { if (typeof values[key] === "string") values[key] = Number(values[key]); }); setSaving(true); setError(""); try { await nocobaseClient.action(config.resource, "create", { method: "POST", body: values }); close(false); onCreated(); } catch (cause) { setError((cause as Error).message); } finally { setSaving(false); } };
+  return <Dialog open={open} onOpenChange={close}><DialogContent className="max-h-[88vh] max-w-xl overflow-y-auto border-border bg-popover p-4 sm:max-w-xl"><DialogHeader><DialogTitle>{config.action}</DialogTitle><DialogDescription>Create directly in the existing {config.resource} collection.</DialogDescription></DialogHeader><form onSubmit={submit} className="grid gap-3 sm:grid-cols-2">{page === "requests" && <section className="ops-panel relative overflow-hidden rounded-md border border-sky-400/35 bg-sky-400/[0.07] p-3 sm:col-span-2"><div className="absolute inset-y-0 left-0 w-0.5 bg-sky-300" /><div className="mb-2 flex items-center gap-2 text-sky-200"><span className="grid size-6 place-items-center rounded-sm bg-sky-400/15"><Sparkles className="size-3.5" /></span><div><div className="text-xs font-bold tracking-[0.12em] uppercase">AI assist</div><p className="text-[11px] text-muted-foreground">Describe the problem in plain English. AI assist will structure the request for you.</p></div></div><Textarea aria-label="Describe your IT problem" value={problem} onChange={(event) => setProblem(event.target.value)} placeholder="Example: I cannot connect to VPN after resetting my password and need access before today's client call." className="min-h-20 border-sky-400/20 bg-background/60 text-sm" /><div className="mt-2 flex flex-wrap items-center justify-between gap-2"><span className="text-[10px] font-medium tracking-wide text-sky-200/80 uppercase">Local analysis · no data leaves this form</span><Button type="button" size="sm" onClick={fillWithAi} disabled={analyzing}><Sparkles />{analyzing ? "Analyzing..." : "Fill with AI"}</Button></div>{suggestedResolution && <div className="mt-3 border-t border-sky-400/20 pt-2"><div className="text-[10px] font-bold tracking-[0.12em] text-sky-200 uppercase">Suggested resolution</div><p className="mt-1 text-xs leading-5 text-muted-foreground">{suggestedResolution}</p></div>}</section>}{fieldConfig[page].map(([name, label, type]) => <label key={name} className={`grid gap-1 text-xs font-medium ${type === "textarea" ? "sm:col-span-2" : ""}`}><span>{label}</span>{type === "textarea" ? <Textarea name={name} value={page === "requests" ? requestValues[name] ?? "" : undefined} onChange={page === "requests" ? (event) => setRequestValues((values) => ({ ...values, [name]: event.target.value })) : undefined} className="min-h-20" /> : <Input name={name} type={type} value={page === "requests" ? requestValues[name] ?? "" : undefined} onChange={page === "requests" ? (event) => setRequestValues((values) => ({ ...values, [name]: event.target.value })) : undefined} required={name === "name" || name === "subject" || name === "issue"} />}</label>)}{error && <div className="sm:col-span-2 text-xs text-rose-300">{error}</div>}<div className="flex justify-end gap-2 sm:col-span-2"><Button type="button" variant="outline" onClick={() => close(false)}>Cancel</Button><Button type="submit" disabled={saving}>{saving ? "Saving..." : config.action}</Button></div></form></DialogContent></Dialog>;
 }
 
 function AssetHistory({ assetId, onClose }: { assetId: number | null; onClose: () => void }) {
