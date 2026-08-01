@@ -29,6 +29,7 @@ import {
   LoaderCircle,
 } from "lucide-react";
 import { useEffect, useState, type FormEvent } from "react";
+import { useAITranslate } from "../../locales/use-ai-translate";
 
 export function ConversationList({
   onClose,
@@ -37,6 +38,7 @@ export function ConversationList({
   onClose?: () => void;
   showCloseButton?: boolean;
 } = {}) {
+  const t = useAITranslate();
   const {
     conversations,
     activeConversationId,
@@ -84,7 +86,9 @@ export function ConversationList({
       setRenameTarget(undefined);
     } catch (error) {
       setRenameError(
-        error instanceof Error ? error.message : "Unable to rename conversation"
+        error instanceof Error
+          ? error.message
+          : t("chat.rename.error", "Unable to rename conversation")
       );
     } finally {
       setRenaming(false);
@@ -100,7 +104,9 @@ export function ConversationList({
       setDeleteTarget(undefined);
     } catch (error) {
       setDeleteError(
-        error instanceof Error ? error.message : "Unable to delete conversation"
+        error instanceof Error
+          ? error.message
+          : t("chat.delete.error", "Unable to delete conversation")
       );
     } finally {
       setDeleting(false);
@@ -115,7 +121,10 @@ export function ConversationList({
             <Button
               variant="ghost"
               size="icon-sm"
-              aria-label="Close conversation list"
+              aria-label={t(
+                "chat.closeConversationList",
+                "Close conversation list"
+              )}
               onClick={() =>
                 onClose ? onClose() : setConversationListOpen(false)
               }
@@ -123,12 +132,14 @@ export function ConversationList({
               <PanelLeftClose />
             </Button>
           ) : null}
-          <span className="truncate text-sm font-semibold">Conversations</span>
+          <span className="truncate text-sm font-semibold">
+            {t("chat.conversations", "Conversations")}
+          </span>
         </div>
         <Button
           variant="ghost"
           size="icon-sm"
-          aria-label="New conversation"
+          aria-label={t("chat.newConversationAction", "New conversation")}
           onClick={startNewConversation}
         >
           <Plus />
@@ -146,8 +157,8 @@ export function ConversationList({
           <Input
             value={searchValue}
             className="h-8 pl-8 pr-8 text-sm"
-            placeholder="Search conversations"
-            aria-label="Search conversations"
+            placeholder={t("chat.searchConversations", "Search conversations")}
+            aria-label={t("chat.searchConversations", "Search conversations")}
             onChange={(event) => setSearchValue(event.target.value)}
           />
           {conversationsLoading && conversationSearch ? (
@@ -158,7 +169,10 @@ export function ConversationList({
               variant="ghost"
               size="icon-xs"
               className="absolute right-1.5 top-1/2 -translate-y-1/2"
-              aria-label="Clear conversation search"
+              aria-label={t(
+                "chat.clearConversationSearch",
+                "Clear conversation search"
+              )}
               onClick={() => {
                 setSearchValue("");
                 void searchConversations("").catch(() => undefined);
@@ -192,7 +206,10 @@ export function ConversationList({
                     {conversation.unread && !active ? (
                       <span
                         className="size-2 shrink-0 rounded-full bg-destructive"
-                        aria-label="Unread conversation"
+                        aria-label={t(
+                          "chat.unreadConversation",
+                          "Unread conversation"
+                        )}
                       />
                     ) : null}
                     <span className="block min-w-0 flex-1 truncate text-sm font-medium">
@@ -206,7 +223,10 @@ export function ConversationList({
                           variant="ghost"
                           size="icon-xs"
                           className="mt-1.5 opacity-0 group-hover/conversation:opacity-100 data-popup-open:opacity-100"
-                          aria-label="Conversation actions"
+                          aria-label={t(
+                            "chat.conversationActions",
+                            "Conversation actions"
+                          )}
                         />
                       }
                     >
@@ -222,7 +242,7 @@ export function ConversationList({
                         }
                       >
                         <Pencil />
-                        Rename
+                        {t("actions.rename", "Rename")}
                       </DropdownMenuItem>
                       <DropdownMenuItem
                         variant="destructive"
@@ -235,7 +255,7 @@ export function ConversationList({
                         }}
                       >
                         <Trash2 />
-                        Delete
+                        {t("actions.delete", "Delete")}
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -246,8 +266,11 @@ export function ConversationList({
         ) : (
           <div className="px-3 py-8 text-center text-sm text-muted-foreground">
             {conversationSearch
-              ? "No matching conversations."
-              : "No conversations yet."}
+              ? t(
+                  "chat.noMatchingConversations",
+                  "No matching conversations."
+                )
+              : t("chat.noConversations", "No conversations yet.")}
           </div>
         )}
         {historyError ? (
@@ -265,13 +288,20 @@ export function ConversationList({
         <DialogContent>
           <form onSubmit={submitRename}>
             <DialogHeader>
-              <DialogTitle>Rename conversation</DialogTitle>
+              <DialogTitle>
+                {t("chat.rename.title", "Rename conversation")}
+              </DialogTitle>
               <DialogDescription>
-                Choose a title that makes this conversation easy to find.
+                {t(
+                  "chat.rename.description",
+                  "Choose a title that makes this conversation easy to find."
+                )}
               </DialogDescription>
             </DialogHeader>
             <div className="mt-5 space-y-2">
-              <Label htmlFor="conversation-title">Title</Label>
+              <Label htmlFor="conversation-title">
+                {t("chat.rename.field", "Title")}
+              </Label>
               <Input
                 id="conversation-title"
                 value={renameTitle}
@@ -290,11 +320,11 @@ export function ConversationList({
                 disabled={renaming}
                 onClick={() => setRenameTarget(undefined)}
               >
-                Cancel
+                {t("actions.cancel", "Cancel")}
               </Button>
               <Button type="submit" disabled={renaming || !renameTitle.trim()}>
                 {renaming ? <LoaderCircle className="animate-spin" /> : null}
-                Save
+                {t("actions.save", "Save")}
               </Button>
             </DialogFooter>
           </form>
@@ -308,10 +338,15 @@ export function ConversationList({
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete conversation?</DialogTitle>
+            <DialogTitle>
+              {t("chat.delete.title", "Delete conversation?")}
+            </DialogTitle>
             <DialogDescription>
-              “{deleteTarget?.title}” and its messages will be permanently
-              deleted.
+              {t(
+                "chat.delete.description",
+                "“{{title}}” and its messages will be permanently deleted.",
+                { title: deleteTarget?.title ?? "" }
+              )}
             </DialogDescription>
           </DialogHeader>
           {deleteError ? (
@@ -324,7 +359,7 @@ export function ConversationList({
               disabled={deleting}
               onClick={() => setDeleteTarget(undefined)}
             >
-              Cancel
+              {t("actions.cancel", "Cancel")}
             </Button>
             <Button
               type="button"
@@ -333,7 +368,7 @@ export function ConversationList({
               onClick={() => void confirmDelete()}
             >
               {deleting ? <LoaderCircle className="animate-spin" /> : null}
-              Delete
+              {t("actions.delete", "Delete")}
             </Button>
           </DialogFooter>
         </DialogContent>

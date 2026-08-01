@@ -34,6 +34,7 @@ import {
 } from "@/components/ui/tooltip";
 import { AIModelSelectOptions } from "./model-select-options";
 import { ChatAttachment } from "./chat-attachment";
+import { useAITranslate } from "../../locales/use-ai-translate";
 
 export type AIChatComposerAction = {
   key: string;
@@ -51,8 +52,8 @@ export function ChatComposer({
   showModelSelector = true,
   enableAttachments = false,
   attachmentActionIndex = 0,
-  placeholder = "Message your AI employee…",
-  disclaimer = "AI can make mistakes. Review important changes before publishing.",
+  placeholder,
+  disclaimer,
 }: {
   actions?: AIChatComposerAction[];
   showEmployeeSelector?: boolean;
@@ -62,6 +63,7 @@ export function ChatComposer({
   placeholder?: string;
   disclaimer?: ReactNode | false;
 }) {
+  const t = useAITranslate();
   const {
     draft,
     setDraft,
@@ -99,6 +101,16 @@ export function ChatComposer({
     0,
     Math.min(attachmentActionIndex, actions.length)
   );
+  const resolvedPlaceholder =
+    placeholder ??
+    t("chat.composer.placeholder", "Message your AI employee…");
+  const resolvedDisclaimer =
+    disclaimer === undefined
+      ? t(
+          "chat.composer.disclaimer",
+          "AI can make mistakes. Review important changes before publishing."
+        )
+      : disclaimer;
   const renderAction = (action: AIChatComposerAction) => (
     <Tooltip key={action.key}>
       <TooltipTrigger
@@ -146,11 +158,12 @@ export function ChatComposer({
               className="justify-between border-b px-3 py-2 text-xs"
             >
               <span className="flex items-center gap-2 text-foreground">
-                <Pencil className="size-3.5" /> Editing message
+                <Pencil className="size-3.5" />
+                {t("chat.composer.editing", "Editing message")}
               </span>
               <InputGroupButton
                 size="icon-xs"
-                aria-label="Cancel editing"
+                aria-label={t("chat.composer.cancelEditing", "Cancel editing")}
                 onClick={cancelEditingMessage}
               >
                 <X />
@@ -190,7 +203,7 @@ export function ChatComposer({
             ref={textareaRef}
             value={draft}
             rows={2}
-            placeholder={placeholder}
+            placeholder={resolvedPlaceholder}
             className="max-h-44 min-h-16 px-3 pt-3 text-sm"
             onChange={(event) => setDraft(event.target.value)}
             onPaste={(event) => {
@@ -227,14 +240,16 @@ export function ChatComposer({
                         size="icon-sm"
                         variant="ghost"
                         className="h-7 w-7 shrink-0 p-0"
-                        aria-label="Upload files"
+                        aria-label={t("chat.composer.uploadFiles", "Upload files")}
                         onClick={() => fileInputRef.current?.click()}
                       />
                     }
                   >
                     <Paperclip />
                   </TooltipTrigger>
-                  <TooltipContent>Upload files</TooltipContent>
+                  <TooltipContent>
+                    {t("chat.composer.uploadFiles", "Upload files")}
+                  </TooltipContent>
                 </Tooltip>
               ) : null}
               {actions.slice(normalizedAttachmentActionIndex).map(renderAction)}
@@ -349,7 +364,7 @@ export function ChatComposer({
                 size="icon-sm"
                 variant="default"
                 className="rounded-lg"
-                aria-label="Stop generating"
+                aria-label={t("chat.composer.stop", "Stop generating")}
                 onClick={() => void stop()}
               >
                 <Square className="size-3 fill-current" />
@@ -359,7 +374,7 @@ export function ChatComposer({
                 size="icon-sm"
                 variant="default"
                 className="rounded-lg"
-                aria-label="Send message"
+                aria-label={t("chat.composer.send", "Send message")}
                 disabled={
                   !canSend ||
                   uploadingAttachments ||
@@ -392,9 +407,9 @@ export function ChatComposer({
           />
         ) : null}
       </div>
-      {disclaimer !== false ? (
+      {resolvedDisclaimer !== false ? (
         <p className="my-2.5 px-4 text-center text-[11px] text-muted-foreground">
-          {disclaimer}
+          {resolvedDisclaimer}
         </p>
       ) : (
         <div className="h-2" />

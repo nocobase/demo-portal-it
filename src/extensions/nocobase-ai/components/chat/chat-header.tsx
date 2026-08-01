@@ -8,6 +8,7 @@ import { useAIChatBase } from "../../providers";
 import { Menu, PanelLeftClose, PlusCircle } from "lucide-react";
 import type { ReactNode } from "react";
 import { UserPromptEditor } from "./user-prompt-editor";
+import { useAITranslate } from "../../locales/use-ai-translate";
 
 export function ChatHeader({
   actions,
@@ -20,6 +21,7 @@ export function ChatHeader({
   showNewConversation?: boolean;
   showUserPrompt?: boolean;
 }) {
+  const t = useAITranslate();
   const {
     activeConversation,
     conversations,
@@ -41,7 +43,7 @@ export function ChatHeader({
                 <Button
                   variant="ghost"
                   size="icon-sm"
-                  aria-label="Conversation list"
+                  aria-label={t("chat.conversationList", "Conversation list")}
                   onClick={() => setConversationListOpen(!conversationListOpen)}
                 />
               }
@@ -53,13 +55,16 @@ export function ChatHeader({
                 ) : null}
               </span>
             </TooltipTrigger>
-            <TooltipContent>Conversation list</TooltipContent>
+            <TooltipContent>
+              {t("chat.conversationList", "Conversation list")}
+            </TooltipContent>
           </Tooltip>
         ) : null}
       </div>
 
       <div className="pointer-events-none min-w-0 truncate px-2 text-center text-sm font-medium">
-        {activeConversation?.title ?? "New conversation"}
+        {activeConversation?.title ??
+          t("chat.newConversation", "New conversation")}
       </div>
 
       <div className="flex shrink-0 items-center gap-0.5">
@@ -71,14 +76,19 @@ export function ChatHeader({
                 <Button
                   variant="ghost"
                   size="icon-sm"
-                  aria-label="New conversation"
+                  aria-label={t(
+                    "chat.newConversationAction",
+                    "New conversation"
+                  )}
                   onClick={startNewConversation}
                 />
               }
             >
               <PlusCircle />
             </TooltipTrigger>
-            <TooltipContent>New conversation</TooltipContent>
+            <TooltipContent>
+              {t("chat.newConversationAction", "New conversation")}
+            </TooltipContent>
           </Tooltip>
         ) : null}
         {actions}

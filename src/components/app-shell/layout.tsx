@@ -4,6 +4,7 @@ import { Header } from "@/components/app-shell/header";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
 import type { PropsWithChildren } from "react";
+import { PageErrorBoundary } from "./page-error-boundary";
 import { Sidebar } from "./sidebar";
 
 export function Layout({ children }: PropsWithChildren) {
@@ -29,7 +30,7 @@ export function Layout({ children }: PropsWithChildren) {
             "lg:py-7"
           )}
         >
-          {children}
+          <PageErrorBoundary>{children}</PageErrorBoundary>
         </main>
       </SidebarInset>
     </SidebarProvider>

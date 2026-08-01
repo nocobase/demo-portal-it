@@ -19,6 +19,7 @@ import {
 import { AIChatProvider, useAIChatBase } from "../providers";
 import { Globe2, MousePointer2 } from "lucide-react";
 import { useMemo, useState } from "react";
+import { useAITranslate } from "../locales/use-ai-translate";
 
 export function PageElementShowcase() {
   return (
@@ -29,6 +30,7 @@ export function PageElementShowcase() {
 }
 
 function PageElementShowcaseContent() {
+  const t = useAITranslate();
   const [customerName, setCustomerName] = useState("Northwind Studio");
   const [contactEmail, setContactEmail] = useState("ops@northwind.test");
   const [priority, setPriority] = useState("high");
@@ -40,7 +42,7 @@ function PageElementShowcaseContent() {
     () => [
       {
         key: "pick-page-element",
-        label: "Pick page element",
+        label: t("actions.pickPageElement", "Pick page element"),
         icon: <MousePointer2 />,
         disabled: registeredCount === 0,
         onClick: () =>
@@ -54,7 +56,7 @@ function PageElementShowcaseContent() {
       },
       {
         key: "web-search",
-        label: "Web search",
+        label: t("actions.webSearch", "Web search"),
         icon: <Globe2 />,
         active: webSearch,
         onClick: () => setWebSearch((active) => !active),
@@ -66,6 +68,7 @@ function PageElementShowcaseContent() {
       focusComposer,
       registeredCount,
       startPicking,
+      t,
       webSearch,
     ]
   );

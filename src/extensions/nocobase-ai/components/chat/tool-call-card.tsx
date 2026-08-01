@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { useAIToolRenderer } from "../tools/tool-renderer-provider";
+import { useAITranslate } from "../../locales/use-ai-translate";
 
 export type ToolCallPart = Extract<
   AIChatMessage["parts"][number],
@@ -45,29 +46,32 @@ const formatValue = (value: unknown) => {
   }
 };
 
-const getStatus = (part: ToolCallPart) => {
+const getStatus = (
+  part: ToolCallPart,
+  t: ReturnType<typeof useAITranslate>
+) => {
   switch (part.state) {
     case "input-streaming":
       return {
-        label: "Preparing",
+        label: t("tool.status.preparing", "Preparing"),
         icon: LoaderCircle,
         tone: "text-muted-foreground",
       };
     case "input-available":
       return {
-        label: "Running",
+        label: t("tool.status.running", "Running"),
         icon: LoaderCircle,
         tone: "text-muted-foreground",
       };
     case "output-error":
       return {
-        label: "Failed",
+        label: t("tool.status.failed", "Failed"),
         icon: CircleAlert,
         tone: "text-destructive",
       };
     case "output-available":
       return {
-        label: "Completed",
+        label: t("tool.status.completed", "Completed"),
         icon: Check,
         tone: "text-foreground",
       };
@@ -124,6 +128,7 @@ export function ToolCallCard({
   inlineActions,
   disabled = false,
 }: ToolCallCardProps) {
+  const t = useAITranslate();
   const resolvedApproval = approval ?? approvalFromPart(part);
   const [approvalStatus, setApprovalStatus] = useState(
     resolvedApproval?.status ?? "pending"
@@ -132,15 +137,27 @@ export function ToolCallCard({
   const renderer = useAIToolRenderer(getToolCallName(part));
   const Renderer = renderer?.component;
   const [open, setOpen] = useState(false);
-  const toolStatus = getStatus(part);
+  const toolStatus = getStatus(part, t);
   const approvalRequired =
     resolvedApproval?.required === true && approvalStatus === "pending";
   const status = approvalRequired
-    ? { label: "Approval required", icon: CircleAlert, tone: "text-foreground" }
+    ? {
+        label: t("tool.status.approvalRequired", "Approval required"),
+        icon: CircleAlert,
+        tone: "text-foreground",
+      }
     : approvalStatus === "rejected"
-    ? { label: "Denied", icon: CircleAlert, tone: "text-muted-foreground" }
+    ? {
+        label: t("tool.status.denied", "Denied"),
+        icon: CircleAlert,
+        tone: "text-muted-foreground",
+      }
     : approvalStatus === "approved" && part.state === "input-available"
-    ? { label: "Allowed", icon: Check, tone: "text-foreground" }
+    ? {
+        label: t("tool.status.allowed", "Allowed"),
+        icon: Check,
+        tone: "text-foreground",
+      }
     : toolStatus;
   const StatusIcon = status.icon;
   const hasInput = part.input !== undefined;
@@ -215,7 +232,7 @@ export function ToolCallCard({
                   "animate-spin"
               )}
             />
-            {deciding ? "Applying…" : status.label}
+            {deciding ? t("tool.status.applying", "Applying…") : status.label}
           </span>
           <ChevronDown className="size-3.5 shrink-0 transition-transform group-data-panel-open/tool-call:rotate-180" />
         </CollapsibleTrigger>
@@ -226,7 +243,10 @@ export function ToolCallCard({
       {approvalRequired && !renderer?.handlesApproval ? (
         <div className="flex items-center justify-between gap-3 border-t px-3 py-2.5">
           <p className="text-xs text-muted-foreground">
-            This tool needs permission before it can run.
+            {t(
+              "tool.permission.description",
+              "This tool needs permission before it can run."
+            )}
           </p>
           <div className="flex shrink-0 items-center gap-2">
             <Button
@@ -235,14 +255,14 @@ export function ToolCallCard({
               disabled={disabled || deciding}
               onClick={() => void decide("reject")}
             >
-              Deny
+              {t("actions.deny", "Deny")}
             </Button>
             <Button
               size="sm"
               disabled={disabled || deciding}
               onClick={() => void decide("approve")}
             >
-              Allow
+              {t("actions.allow", "Allow")}
             </Button>
           </div>
         </div>
@@ -266,14 +286,18 @@ export function ToolCallCard({
             />
           </div>
         ) : hasInput ? (
-          <ToolCallValue label="Input" value={part.input} />
+          <ToolCallValue label={t("tool.input", "Input")} value={part.input} />
         ) : null}
         {part.state === "output-error" ? (
-          <ToolCallValue label="Error" value={part.errorText} error />
+          <ToolCallValue
+            label={t("tool.error", "Error")}
+            value={part.errorText}
+            error
+          />
         ) : null}
         {!Renderer && !hasInput && !hasError ? (
           <p className="px-3 py-3 text-xs text-muted-foreground">
-            Waiting for tool input…
+            {t("tool.waitingInput", "Waiting for tool input…")}
           </p>
         ) : null}
       </CollapsibleContent>

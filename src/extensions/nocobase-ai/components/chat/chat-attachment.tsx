@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { AIChatAttachment } from "../../providers";
 import { FileText, LoaderCircle, TriangleAlert, X } from "lucide-react";
+import { useAITranslate } from "../../locales/use-ai-translate";
 
 export function ChatAttachment({
   attachment,
@@ -12,6 +13,7 @@ export function ChatAttachment({
   removable?: boolean;
   onRemove?: () => void;
 }) {
+  const t = useAITranslate();
   const preview =
     attachment.preview ??
     (attachment.mimetype?.startsWith("image/") ? attachment.url : undefined);
@@ -36,17 +38,22 @@ export function ChatAttachment({
         <div className="mt-0.5 flex items-center gap-1 text-[11px] text-muted-foreground">
           {attachment.status === "uploading" ? (
             <>
-              <LoaderCircle className="size-3 animate-spin" /> Uploading…
+              <LoaderCircle className="size-3 animate-spin" />
+              {t("chat.attachment.uploading", "Uploading…")}
             </>
           ) : attachment.status === "error" ? (
             <>
               <TriangleAlert className="size-3 text-destructive" />
               <span className="truncate text-destructive">
-                {attachment.error ?? "Upload failed"}
+                {attachment.error ??
+                  t("chat.attachment.uploadFailed", "Upload failed")}
               </span>
             </>
           ) : (
-            formatFileSize(attachment.size)
+            formatFileSize(
+              attachment.size,
+              t("chat.attachment.file", "File")
+            )
           )}
         </div>
       </div>
@@ -56,7 +63,11 @@ export function ChatAttachment({
           variant="ghost"
           size="icon-xs"
           className="shrink-0 rounded-full"
-          aria-label={`Remove ${attachment.filename}`}
+          aria-label={t(
+            "chat.attachment.remove",
+            "Remove {{filename}}",
+            { filename: attachment.filename }
+          )}
           onClick={(event) => {
             event.preventDefault();
             event.stopPropagation();
@@ -84,8 +95,8 @@ export function ChatAttachment({
   return content;
 }
 
-function formatFileSize(size?: number) {
-  if (!size) return "File";
+function formatFileSize(size: number | undefined, fallback: string) {
+  if (!size) return fallback;
   if (size < 1024) return `${size} B`;
   if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
   return `${(size / 1024 / 1024).toFixed(1)} MB`;

@@ -25,7 +25,7 @@ export function DataTableSorter<TData>({
     <Button
       variant="ghost"
       size="icon"
-      onClick={() => column.toggleSorting(undefined, true)}
+      onClick={column.getToggleSortingHandler()}
       title={title}
       aria-label={title}
       {...props}

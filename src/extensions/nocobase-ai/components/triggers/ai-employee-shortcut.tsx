@@ -17,6 +17,7 @@ import {
 import { AIEmployeeAvatar } from "../chat/ai-employee-avatar";
 import { Send, TextCursorInput } from "lucide-react";
 import { useState } from "react";
+import { useAITranslate } from "../../locales/use-ai-translate";
 
 export type AIEmployeeShortcutProps = {
   aiEmployee: string | AIEmployee;
@@ -43,6 +44,7 @@ export function AIEmployeeShortcut({
   className,
   onTrigger,
 }: AIEmployeeShortcutProps) {
+  const t = useAITranslate();
   const ai = useAI();
   const [focused, setFocused] = useState(false);
   const globalController = useGlobalAIChatController();
@@ -137,7 +139,9 @@ export function AIEmployeeShortcut({
                 )}
                 <span>{task.title}</span>
                 <span className="text-[10px] text-muted-foreground">
-                  {task.autoSend ? "Auto send" : "Fill composer"}
+                  {task.autoSend
+                    ? t("chat.task.autoSend", "Auto send")
+                    : t("chat.task.fillComposerShort", "Fill composer")}
                 </span>
               </Button>
             ))}

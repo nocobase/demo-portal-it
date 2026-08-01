@@ -6,6 +6,7 @@ import {
   useGlobalAIChatController,
 } from "../../providers";
 import type { AIChatController } from "../../providers";
+import { useAITranslate } from "../../locales/use-ai-translate";
 
 export type AIChatFloatingTriggerProps = {
   aiEmployee?: string;
@@ -24,6 +25,7 @@ export function AIChatFloatingTrigger({
   hideWhenOpen = true,
   className,
 }: AIChatFloatingTriggerProps) {
+  const t = useAITranslate();
   const ai = useAI();
   const globalController = useGlobalAIChatController();
   const controller = providedController ?? globalController;
@@ -43,7 +45,7 @@ export function AIChatFloatingTrigger({
   return (
     <button
       type="button"
-      aria-label="Open AI chat"
+      aria-label={t("surface.openChat", "Open AI chat")}
       className={cn(
         "group/ai-floating z-40 flex items-center rounded-l-full border bg-background py-2.5 pr-5 pl-3 shadow-lg transition-[transform,opacity,box-shadow] duration-300 hover:translate-x-0 hover:opacity-100 hover:shadow-xl focus-visible:translate-x-0 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
         position === "fixed"

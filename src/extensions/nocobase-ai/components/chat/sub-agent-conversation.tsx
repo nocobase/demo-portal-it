@@ -15,6 +15,7 @@ import {
   isToolCallPart,
   ToolCallCard,
 } from "./tool-call-card";
+import { useAITranslate } from "../../locales/use-ai-translate";
 
 export function SubAgentConversation({
   conversation,
@@ -29,6 +30,7 @@ export function SubAgentConversation({
   decideToolCall?: (decision: AIToolCallDecision) => Promise<void>;
   focusComposer?: () => void;
 }) {
+  const t = useAITranslate();
   const ai = useAI();
   const completed = conversation.status === "completed";
   const [expanded, setExpanded] = useState(true);
@@ -63,7 +65,9 @@ export function SubAgentConversation({
         </span>
         <span className="flex shrink-0 items-center gap-1.5 text-xs font-normal text-muted-foreground">
           {!completed ? <LoaderCircle className="size-3 animate-spin" /> : null}
-          {completed ? "Completed" : "Working"}
+          {completed
+            ? t("tool.status.completed", "Completed")
+            : t("tool.subAgent.statusWorking", "Working")}
         </span>
       </Button>
       {expanded ? (
@@ -132,7 +136,9 @@ export function SubAgentConversation({
                 !completed && "animate-pulse"
               )}
             >
-              {completed ? "No visible output." : "Starting delegated work…"}
+              {completed
+                ? t("tool.subAgent.noOutput", "No visible output.")
+                : t("tool.subAgent.starting", "Starting delegated work…")}
             </div>
           ) : null}
         </div>
