@@ -163,7 +163,17 @@
   }
 
   .ops-grid {
-    background-image: linear-gradient(to right, oklch(0.75 0.1 210 / 5%) 1px, transparent 1px), linear-gradient(to bottom, oklch(0.75 0.1 210 / 4%) 1px, transparent 1px);
+    background-image:
+      linear-gradient(
+        to right,
+        oklch(0.75 0.1 210 / 5%) 1px,
+        transparent 1px
+      ),
+      linear-gradient(
+        to bottom,
+        oklch(0.75 0.1 210 / 4%) 1px,
+        transparent 1px
+      );
     background-size: 24px 24px;
   }
 
@@ -254,11 +264,11 @@
 }
 
 @media (min-width: 768px) {
-  .chat-side-panel-layout[data-open="true"][data-side="right"] {
+  .chat-side-panel-layout[data-open="true"][data-chat-side="right"] {
     padding-inline-end: var(--chat-side-panel-width);
   }
 
-  .chat-side-panel-layout[data-open="true"][data-side="left"] {
+  .chat-side-panel-layout[data-open="true"][data-chat-side="left"] {
     padding-inline-start: var(--chat-side-panel-width);
   }
 }

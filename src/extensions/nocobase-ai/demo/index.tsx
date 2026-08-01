@@ -241,7 +241,7 @@ function AIChatPageContent() {
   return (
     <div
       data-open={surfaceOpen && container === "side-panel"}
-      data-side="right"
+      data-chat-side="right"
       className="chat-side-panel-layout @container min-w-0"
       style={
         {

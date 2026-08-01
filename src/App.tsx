@@ -4,7 +4,15 @@ import { BrowserRouter } from "react-router";
 import routerProvider, {
   UnsavedChangesNotifier,
 } from "@refinedev/react-router";
-import { dataProvider } from "./providers/data";
+import {
+  accessControlProvider,
+  AclStoreProvider,
+  aclStore,
+} from "@nocobase/portal-sdk/acl";
+import { authProvider } from "@nocobase/portal-sdk/auth";
+import { dataProvider } from "@nocobase/portal-sdk/data";
+import { i18nProvider } from "@nocobase/portal-sdk/i18n";
+import { getPortalBase } from "@nocobase/portal-sdk/runtime";
 import { DocumentTitleHandler } from "./components/app-shell/document-title-handler";
 import { useNotificationProvider } from "./components/notifications/use-notification-provider";
 import { Toaster } from "./components/notifications/toaster";
@@ -16,12 +24,7 @@ import {
   configuredResources,
 } from "./app/extensions";
 import "./App.css";
-import { authProvider } from "./providers/auth";
-import { accessControlProvider } from "./providers/access-control";
-import { i18nProvider } from "./providers/i18n";
-import { SystemSettingsProvider } from "./providers/system-settings";
-import { getPortalBase } from "./providers/runtime-config";
-import { AclStoreProvider, aclStore } from "./lib/nocobase/acl";
+import { SystemSettingsProvider } from "./providers/system-settings/provider";
 import { AppRoutes } from "./app/routes";
 
 const getResourcePriority = (resource: ResourceProps) =>
@@ -54,7 +57,7 @@ function App() {
                     warnWhenUnsavedChanges: true,
                     disableTelemetry: true,
                     title: {
-                      text: "IT Operations",
+                      text: "NocoBase",
                       icon: <BrandLogo className="size-14 rounded-2xl" />,
                     },
                   }}
@@ -63,7 +66,7 @@ function App() {
 
                   <Toaster />
                   <UnsavedChangesNotifier />
-                  <DocumentTitleHandler appName="IT Operations" />
+                  <DocumentTitleHandler appName="NocoBase" />
                 </Refine>
               </AclStoreProvider>
             </SystemSettingsProvider>

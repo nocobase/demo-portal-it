@@ -53,7 +53,7 @@ function FloatingChatPageContent() {
     <AIChatProvider id="floating-chat-demo" controller={controller}>
       <div
         data-open={open && !expanded}
-        data-side="right"
+        data-chat-side="right"
         className="chat-side-panel-layout @container min-w-0"
         style={
           {

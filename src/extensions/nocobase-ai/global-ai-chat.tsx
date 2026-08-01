@@ -55,7 +55,7 @@ function NocoBaseAIGlobalEntry({ children }: PropsWithChildren) {
   return (
     <div
       data-open={ready && open && !expanded}
-      data-side="right"
+      data-chat-side="right"
       className="chat-side-panel-layout @container min-h-svh min-w-0"
       style={
         {

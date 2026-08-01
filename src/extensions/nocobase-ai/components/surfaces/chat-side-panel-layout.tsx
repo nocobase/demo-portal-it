@@ -30,7 +30,7 @@ export function ChatSidePanelLayout({
   return (
     <div
       data-open={open}
-      data-side={side}
+      data-chat-side={side}
       className={cn("chat-side-panel-layout @container min-w-0", className)}
       style={
         {

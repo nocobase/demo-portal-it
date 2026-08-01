@@ -3,7 +3,8 @@ export type RouteSurfaceScenarioId =
   | "dialog"
   | "page"
   | "nested-drawers"
-  | "page-drawer-dialog";
+  | "page-drawer-dialog"
+  | "contextual-child-routes";
 
 export type RouteSurfaceScenario = {
   id: RouteSurfaceScenarioId;
@@ -60,6 +61,15 @@ export const routeSurfaceScenarios: RouteSurfaceScenario[] = [
     path: "page/drawer/dialog",
     routeShape: "Child page → Drawer → Dialog",
   },
+  {
+    id: "contextual-child-routes",
+    number: "6",
+    title: "Contextual child routes",
+    description:
+      "Open the same create, edit, and detail surfaces from a list or detail context without leaving the current workflow.",
+    path: "contextual",
+    routeShape: "List → Detail → Edit",
+  },
 ];
 
 export function getRouteSurfacePrompt(
@@ -76,6 +86,8 @@ export function getRouteSurfacePrompt(
       "Create a parent RouteDrawer with an Outlet and pass the rendered child outlet through its nested prop. The second RouteDrawer must push the lower drawer outward, keep equal widths, and close back to the parent route.",
     "page-drawer-dialog":
       "Render a RoutePage first, place a RouteDrawer route inside that page, then render a RouteDialog as the drawer's nested route. Closing each layer must return to the immediately lower URL.",
+    "contextual-child-routes":
+      "Define the list as the host route and register create, edit, and show as relative child routes. Reuse the same business surface from both list and detail contexts, but keep each URL under the route that opened it. Do not navigate to a fixed top-level resource URL from a child context.",
   }[scenario.id];
 
   return `Build ${
@@ -87,7 +99,7 @@ Scenario:
 - ${presentation}
 
 Implementation requirements:
-- Import RouteDrawer, RouteDialog, RoutePage, and useRouteSurfaceClose from @/extensions/nocobase-route-surfaces as needed.
+- Import RouteDrawer, RouteDialog, and RoutePage from @/extensions/nocobase-route-surfaces; import useRouteSurfaceClose from @nocobase/portal-sdk/routing when actions need to close the active surface.
 - Define application-owned resource routes once with defineAppRoutes. resourceAction only binds a child path to the parent Refine resource's create, edit, or show URL; it does not choose a presentation.
 - With the default automatic resource outlet, every resourceAction element must render a RouteDrawer or RouteDialog. Never place a plain full-page form or detail component there because it will render below the list.
 - When a resource action must replace the list as a full page, set outlet: "manual" on the resource route and use an application-owned layout that renders or consumes useOutlet().
@@ -95,6 +107,9 @@ Implementation requirements:
 - Keep business content independent from its presentation container so the same content can move between a drawer, dialog, or page.
 - Every surface must have an explicit closeTo URL.
 - Use nested React Router routes and Outlet only when the visual layer is genuinely nested.
+- Treat create, edit, show, and related-content overlays as contextual child routes. Use relative paths and navigation from the current host route; do not use a fixed absolute URL that moves the user to another resource page.
+- Reuse business content across hosts, but let each host route own its child surface and closeTo URL. A resource name alone is not enough to select the correct presentation URL.
+- When opening a contextual child, preserve the complete host URL, including search and hash, in navigation state. Use it as closeTo and fall back to the resolved parent route for direct URL entry.
 - A full child page must be a page route branch, not an Outlet rendered inside a drawer.
 - For editable forms, use useRefineUnsavedChangesGuard, pass its beforeClose callback to the surface, render its confirmation node, and use useRouteSurfaceClose for Cancel and successful submission.
 - Direct URL entry, refresh, browser back/forward, Escape, the close button, and backdrop dismissal must all restore the correct layer stack.
