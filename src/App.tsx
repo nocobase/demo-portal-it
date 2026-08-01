@@ -40,7 +40,7 @@ function App() {
   return (
     <BrowserRouter basename={basename || undefined}>
       <AppAuthRuntimeProviders>
-        <ThemeProvider defaultTheme="dark">
+        <ThemeProvider>
           <TooltipProvider>
             <SystemSettingsProvider>
               <AclStoreProvider store={aclStore}>

@@ -13,7 +13,6 @@ dist
 dist-ssr
 *.local
 /.extension-state/
-/src/extensions/
 /registry.json
 /public/r/
 

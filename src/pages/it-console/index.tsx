@@ -71,8 +71,7 @@ type Summary = { label: string; value: number };
 type FieldType = "text" | "date" | "number" | "textarea";
 type TranslatableLabel = { key: string; fallback: string };
 
-// Blue-forward palette shared across the CRM / IT / Helpdesk portals.
-const colors = ["#2563eb", "#0ea5e9", "#14b8a6", "#f59e0b", "#a855f7", "#ef4444"];
+const colors = ["#38bdf8", "#34d399", "#fbbf24", "#fb7185", "#a78bfa"];
 
 const pageConfig = {
   assets: {
@@ -624,8 +623,8 @@ function Dashboard() {
               />
               <Bar
                 dataKey="value"
-                radius={[4, 4, 0, 0]}
-                fill="#2563eb"
+                radius={[3, 3, 0, 0]}
+                fill="#38bdf8"
               />
             </BarChart>
           </ResponsiveContainer>
