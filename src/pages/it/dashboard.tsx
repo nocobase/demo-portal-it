@@ -45,6 +45,24 @@ import {
   type RequestRecord,
 } from "./lib";
 import { nocobaseClient } from "@nocobase/portal-sdk/client";
+import {
+  BuildStoryBanner,
+  type BuildStory,
+} from "@/components/build-story/build-story-banner";
+
+// How this portal was built — effective (active) time, derived from the build's
+// git commit bursts. Shown in the pinned banner on the dashboard.
+const BUILD_STORY: BuildStory = {
+  models: ["Opus 4.8", "GPT-5.6 sol"],
+  moduleCount: 5,
+  moduleLabelKey: "buildStory.modules",
+  tracks: [
+    { labelKey: "buildStory.phase.initial", models: ["GPT-5.6 sol"], start: 0, minutes: 40 },
+    { labelKey: "buildStory.phase.rebuild", models: ["Opus 4.8"], start: 40, minutes: 25 },
+    { labelKey: "buildStory.phase.style", models: ["Opus 4.8"], start: 65, minutes: 15 },
+    { labelKey: "buildStory.phase.finalize", models: ["Opus 4.8"], start: 80, minutes: 10 },
+  ],
+};
 
 const listQ = <T,>(resource: string, query: Record<string, unknown>) =>
   nocobaseClient
@@ -93,6 +111,8 @@ export function DashboardPage() {
 
   return (
     <div className="flex flex-col gap-6">
+      <BuildStoryBanner story={BUILD_STORY} />
+
       <PageHeader
         title={tt(translate, "it.dashboard.title", "Operations dashboard")}
         description={tt(translate, "it.dashboard.description", "Fleet value, utilization, license compliance, and the request and repair backlog at a glance.")}
