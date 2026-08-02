@@ -82,6 +82,7 @@ export const starter = {
   "table.pagination.previous": "前往上一页",
   "table.pagination.next": "前往下一页",
   "table.pagination.last": "前往最后一页",
+  "it.common.showMore": "再显示 {{n}} 条",
   "notifications.success": "操作成功",
   "notifications.createSuccess": "已成功创建{{resource}}",
   "notifications.editSuccess": "已成功更新{{resource}}",

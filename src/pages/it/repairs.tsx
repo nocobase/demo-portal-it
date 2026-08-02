@@ -1,11 +1,13 @@
 import {
   useCreate,
+  useInvalidate,
   useList,
   useShow,
   useTranslate,
   useUpdate,
   type HttpError,
 } from "@refinedev/core";
+import { useQueryClient } from "@tanstack/react-query";
 import { useWarnAboutChange } from "@refinedev/core";
 import { Pencil, Plus } from "lucide-react";
 import { useState, type DragEvent, type FormEvent } from "react";
@@ -43,9 +45,12 @@ import {
   formatDate,
   money,
   tt,
+  useDimensionCounts,
+  useSumOf,
   type AssetRecord,
   type RepairRecord,
 } from "./lib";
+import { ShowMore, useColumnLimits } from "./pagination";
 import { useContextualCloseTo, useOpenContextualChild } from "./route-surfaces";
 
 type RepairStage = (typeof REPAIR_STAGES)[number];
@@ -56,26 +61,41 @@ const COLUMN_STYLES: Record<RepairStage, string> = {
   Done: "border-t-emerald-400",
 };
 
+// What a dragged card carries. The board no longer holds every repair in
+// memory, so the payload has to describe the record well enough to move it.
+type DragPayload = {
+  id: RepairRecord["id"];
+  status?: string | null;
+  completedAt?: string | null;
+};
+
 export function RepairsBoard() {
   const translate = useTranslate();
   const openChild = useOpenContextualChild();
   const update = useUpdate();
+  const invalidate = useInvalidate();
+  const queryClient = useQueryClient();
   const [dragOver, setDragOver] = useState<RepairStage | null>(null);
-  const { result, query } = useList<RepairRecord>({
-    resource: "it_repairs",
-    pagination: { mode: "server", currentPage: 1, pageSize: 200 },
-    sorters: [{ field: "startedAt", order: "desc" }],
-    meta: { appends: ["asset"] },
-    queryOptions: { retry: false },
-  });
+  const { limitFor, showMore } = useColumnLimits(REPAIR_STAGES);
 
-  const repairs = result?.data ?? [];
-  const openCount = repairs.filter((r) => r.status === "Open").length;
-  const inProgressCount = repairs.filter((r) => r.status === "In progress").length;
-  const doneCount = repairs.filter((r) => r.status === "Done").length;
-  const totalCost = repairs.reduce((sum, r) => sum + (r.cost ?? 0), 0);
+  // Counts and total cost are aggregated server-side, so they describe every
+  // repair even though each column only loads its first batch of cards.
+  const { counts, isLoading: countsLoading } = useDimensionCounts(
+    "it_repairs",
+    "status"
+  );
+  const { value: totalCost, isLoading: costLoading } = useSumOf(
+    "it_repairs",
+    "cost"
+  );
 
-  const moveRepair = (repair: RepairRecord, to: RepairStage) => {
+  const refresh = () => {
+    void invalidate({ resource: "it_repairs", invalidates: ["list"] });
+    void queryClient.invalidateQueries({ queryKey: ["it-agg", "it_repairs"] });
+    void queryClient.invalidateQueries({ queryKey: ["it-sum", "it_repairs"] });
+  };
+
+  const moveRepair = (repair: DragPayload, to: RepairStage) => {
     if (repair.status === to) return;
     const values: Record<string, unknown> = { status: to };
     if (to === "Done") {
@@ -85,16 +105,20 @@ export function RepairsBoard() {
     }
     update.mutate(
       { resource: "it_repairs", id: repair.id, values },
-      { onSuccess: () => query.refetch() }
+      { onSuccess: refresh }
     );
   };
 
   const handleDrop = (event: DragEvent, stage: RepairStage) => {
     event.preventDefault();
     setDragOver(null);
-    const raw = event.dataTransfer.getData("text/repair-id");
-    const repair = repairs.find((item) => String(item.id) === raw);
-    if (repair) moveRepair(repair, stage);
+    const raw = event.dataTransfer.getData("text/repair");
+    if (!raw) return;
+    try {
+      moveRepair(JSON.parse(raw) as DragPayload, stage);
+    } catch {
+      // A drop from outside the board; nothing to move.
+    }
   };
 
   return (
@@ -115,72 +139,128 @@ export function RepairsBoard() {
       />
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <KpiCard label={tt(translate, "it.value.open", "Open")} value={openCount} />
+        <KpiCard
+          label={tt(translate, "it.value.open", "Open")}
+          value={counts["Open"] ?? 0}
+          loading={countsLoading}
+        />
         <KpiCard
           label={tt(translate, "it.value.in_progress", "In progress")}
-          value={inProgressCount}
+          value={counts["In progress"] ?? 0}
+          loading={countsLoading}
         />
-        <KpiCard label={tt(translate, "it.value.done", "Done")} value={doneCount} />
+        <KpiCard
+          label={tt(translate, "it.value.done", "Done")}
+          value={counts["Done"] ?? 0}
+          loading={countsLoading}
+        />
         <KpiCard
           label={tt(translate, "it.repairs.kpi.totalCost", "Total cost")}
           value={money(totalCost)}
+          loading={costLoading}
         />
       </div>
 
-      {query.isLoading ? (
-        <div className="grid flex-1 gap-4 md:grid-cols-3">
-          {REPAIR_STAGES.map((stage) => (
-            <div key={stage} className="rounded-xl border bg-muted/40" />
-          ))}
-        </div>
-      ) : (
-        <div className="grid flex-1 items-start gap-4 md:grid-cols-3">
-          {REPAIR_STAGES.map((stage) => {
-            const stageRepairs = repairs.filter((r) => r.status === stage);
-            return (
-              <div
-                key={stage}
-                onDragOver={(event) => {
-                  event.preventDefault();
-                  setDragOver(stage);
-                }}
-                onDragLeave={() =>
-                  setDragOver((current) => (current === stage ? null : current))
-                }
-                onDrop={(event) => handleDrop(event, stage)}
-                className={cn(
-                  "flex min-h-48 flex-col gap-3 rounded-xl border border-t-2 bg-muted/40 p-3 transition-colors",
-                  COLUMN_STYLES[stage],
-                  dragOver === stage && "border-primary/50 bg-primary/5"
-                )}
-              >
-                <div className="flex items-center justify-between px-1">
-                  <span className="text-sm font-medium">
-                    {tt(translate, `it.value.${stage.toLowerCase().replace(/\s+/g, "_")}`, stage)}
-                  </span>
-                  <span className="text-xs font-medium text-muted-foreground">
-                    {stageRepairs.length}
-                  </span>
-                </div>
-                {stageRepairs.map((repair) => (
-                  <RepairCard
-                    key={repair.id}
-                    repair={repair}
-                    translate={translate}
-                    onOpen={() => openChild(String(repair.id))}
-                  />
-                ))}
-                {stageRepairs.length === 0 ? (
-                  <p className="rounded-lg border border-dashed px-3 py-6 text-center text-xs text-muted-foreground">
-                    {tt(translate, "it.repairs.emptyColumn", "Drop repairs here")}
-                  </p>
-                ) : null}
-              </div>
-            );
-          })}
-        </div>
-      )}
+      <div className="grid flex-1 items-start gap-4 md:grid-cols-3">
+        {REPAIR_STAGES.map((stage) => (
+          <RepairColumn
+            key={stage}
+            stage={stage}
+            limit={limitFor(stage)}
+            onShowMore={() => showMore(stage)}
+            dragOver={dragOver === stage}
+            onDragOver={(event) => {
+              event.preventDefault();
+              setDragOver(stage);
+            }}
+            onDragLeave={() =>
+              setDragOver((current) => (current === stage ? null : current))
+            }
+            onDrop={(event) => handleDrop(event, stage)}
+            translate={translate}
+            onOpen={openChild}
+          />
+        ))}
+      </div>
       <Outlet />
+    </div>
+  );
+}
+
+/**
+ * One board column. Each column runs its own query filtered to its stage and
+ * capped at `limit`, so opening the board costs three small requests instead
+ * of one that drags in every repair.
+ */
+function RepairColumn({
+  stage,
+  limit,
+  onShowMore,
+  dragOver,
+  onDragOver,
+  onDragLeave,
+  onDrop,
+  translate,
+  onOpen,
+}: {
+  stage: RepairStage;
+  limit: number;
+  onShowMore: () => void;
+  dragOver: boolean;
+  onDragOver: (event: DragEvent) => void;
+  onDragLeave: () => void;
+  onDrop: (event: DragEvent) => void;
+  translate: ReturnType<typeof useTranslate>;
+  onOpen: (path: string) => void;
+}) {
+  const { result, query } = useList<RepairRecord>({
+    resource: "it_repairs",
+    pagination: { mode: "server", currentPage: 1, pageSize: limit },
+    filters: [{ field: "status", operator: "eq", value: stage }],
+    sorters: [{ field: "startedAt", order: "desc" }],
+    meta: { appends: ["asset"] },
+    queryOptions: { retry: false },
+  });
+
+  const repairs = result.data;
+
+  return (
+    <div
+      onDragOver={onDragOver}
+      onDragLeave={onDragLeave}
+      onDrop={onDrop}
+      className={cn(
+        "flex min-h-48 flex-col gap-3 rounded-xl border border-t-2 bg-muted/40 p-3 transition-colors",
+        COLUMN_STYLES[stage],
+        dragOver && "border-primary/50 bg-primary/5"
+      )}
+    >
+      <div className="flex items-center justify-between px-1">
+        <span className="text-sm font-medium">
+          {tt(translate, `it.value.${stage.toLowerCase().replace(/\s+/g, "_")}`, stage)}
+        </span>
+        <span className="text-xs font-medium text-muted-foreground">
+          {query.isLoading ? "—" : result.total}
+        </span>
+      </div>
+      {repairs.map((repair) => (
+        <RepairCard
+          key={repair.id}
+          repair={repair}
+          translate={translate}
+          onOpen={() => onOpen(String(repair.id))}
+        />
+      ))}
+      {!query.isLoading && repairs.length === 0 ? (
+        <p className="rounded-lg border border-dashed px-3 py-6 text-center text-xs text-muted-foreground">
+          {tt(translate, "it.repairs.emptyColumn", "Drop repairs here")}
+        </p>
+      ) : null}
+      <ShowMore
+        loaded={repairs.length}
+        total={result.total}
+        onClick={onShowMore}
+      />
     </div>
   );
 }
@@ -198,7 +278,14 @@ function RepairCard({
     <div
       draggable
       onDragStart={(event) =>
-        event.dataTransfer.setData("text/repair-id", String(repair.id))
+        event.dataTransfer.setData(
+          "text/repair",
+          JSON.stringify({
+            id: repair.id,
+            status: repair.status,
+            completedAt: repair.completedAt,
+          })
+        )
       }
       onClick={onOpen}
       className="cursor-pointer space-y-2 rounded-lg border bg-card p-3 text-left shadow-xs transition-shadow hover:shadow-md active:cursor-grabbing"

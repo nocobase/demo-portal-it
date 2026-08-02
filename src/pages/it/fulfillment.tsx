@@ -1,5 +1,6 @@
 import {
   useCreate,
+  useInvalidate,
   useList,
   useShow,
   useTranslate,
@@ -7,6 +8,7 @@ import {
   useWarnAboutChange,
   type HttpError,
 } from "@refinedev/core";
+import { useQueryClient } from "@tanstack/react-query";
 import { Pencil, Plus } from "lucide-react";
 import { useMemo, useState, type DragEvent, type FormEvent } from "react";
 import { useNavigate, useOutlet, useParams } from "react-router";
@@ -43,13 +45,23 @@ import {
   formatDate,
   personName,
   tt,
+  useDimensionCounts,
   type FulfillmentJobRecord,
   type RequestRecord,
   type UserRef,
 } from "./lib";
+import { ShowMore, useColumnLimits } from "./pagination";
 import { useContextualCloseTo, useOpenContextualChild } from "./route-surfaces";
 
 type Stage = (typeof FULFILLMENT_STAGES)[number];
+
+// What a dragged card carries. The board no longer holds every job in memory,
+// so the payload has to describe the record well enough to move it.
+type DragPayload = {
+  id: FulfillmentJobRecord["id"];
+  status?: string | null;
+  requestId?: FulfillmentJobRecord["requestId"];
+};
 
 const COLUMN_STYLES: Record<Stage, string> = {
   Queued: "border-t-blue-400",
@@ -64,23 +76,26 @@ export function FulfillmentBoard() {
   const update = useUpdate();
   const [dragOver, setDragOver] = useState<Stage | null>(null);
 
-  const { result, query } = useList<FulfillmentJobRecord>({
-    resource: "it_fulfillment_jobs",
-    pagination: { mode: "server", currentPage: 1, pageSize: 200 },
-    sorters: [{ field: "dueDate", order: "asc" }],
-    meta: { appends: ["request", "assignee"] },
-    queryOptions: { retry: false },
-  });
+  const { limitFor, showMore } = useColumnLimits(FULFILLMENT_STAGES);
+  const invalidate = useInvalidate();
+  const queryClient = useQueryClient();
 
-  const jobs = result.data;
+  // Column counts come from the aggregate endpoint, so the KPIs cover every
+  // job while each column only loads its first batch of cards.
+  const { counts, isLoading: countsLoading } = useDimensionCounts(
+    "it_fulfillment_jobs",
+    "status"
+  );
 
-  const counts = useMemo(() => {
-    const c: Record<string, number> = {};
-    for (const j of jobs) c[j.status ?? "—"] = (c[j.status ?? "—"] ?? 0) + 1;
-    return c;
-  }, [jobs]);
+  const refresh = () => {
+    void invalidate({ resource: "it_fulfillment_jobs", invalidates: ["list"] });
+    void invalidate({ resource: "it_requests", invalidates: ["list"] });
+    void queryClient.invalidateQueries({
+      queryKey: ["it-agg", "it_fulfillment_jobs"],
+    });
+  };
 
-  const moveJob = (job: FulfillmentJobRecord, to: Stage) => {
+  const moveJob = (job: DragPayload, to: Stage) => {
     if (job.status === to) return;
     update.mutate(
       { resource: "it_fulfillment_jobs", id: job.id, values: { status: to } },
@@ -93,10 +108,10 @@ export function FulfillmentBoard() {
                 id: job.requestId,
                 values: { status: "Fulfilled" },
               },
-              { onSuccess: () => query.refetch() }
+              { onSuccess: refresh }
             );
           } else {
-            void query.refetch();
+            refresh();
           }
         },
       }
@@ -106,9 +121,13 @@ export function FulfillmentBoard() {
   const handleDrop = (event: DragEvent, stage: Stage) => {
     event.preventDefault();
     setDragOver(null);
-    const raw = event.dataTransfer.getData("text/job-id");
-    const job = jobs.find((j) => String(j.id) === raw);
-    if (job) moveJob(job, stage);
+    const raw = event.dataTransfer.getData("text/job");
+    if (!raw) return;
+    try {
+      moveJob(JSON.parse(raw) as DragPayload, stage);
+    } catch {
+      // A drop from outside the board; nothing to move.
+    }
   };
 
   return (
@@ -132,72 +151,122 @@ export function FulfillmentBoard() {
         <KpiCard
           label={tt(translate, "it.value.queued", "Queued")}
           value={counts["Queued"] ?? 0}
-          loading={query.isLoading}
+          loading={countsLoading}
         />
         <KpiCard
           label={tt(translate, "it.value.in_progress", "In progress")}
           value={counts["In progress"] ?? 0}
           tone="warning"
-          loading={query.isLoading}
+          loading={countsLoading}
         />
         <KpiCard
           label={tt(translate, "it.value.blocked", "Blocked")}
           value={counts["Blocked"] ?? 0}
           tone="danger"
-          loading={query.isLoading}
+          loading={countsLoading}
         />
         <KpiCard
           label={tt(translate, "it.value.done", "Done")}
           value={counts["Done"] ?? 0}
           tone="success"
-          loading={query.isLoading}
+          loading={countsLoading}
         />
       </div>
 
       <div className="grid flex-1 items-start gap-4 md:grid-cols-2 xl:grid-cols-4">
-        {FULFILLMENT_STAGES.map((stage) => {
-          const columnJobs = jobs.filter((j) => j.status === stage);
-          return (
-            <div
-              key={stage}
-              onDragOver={(event) => {
-                event.preventDefault();
-                setDragOver(stage);
-              }}
-              onDragLeave={() =>
-                setDragOver((current) => (current === stage ? null : current))
-              }
-              onDrop={(event) => handleDrop(event, stage)}
-              className={cn(
-                "flex min-h-48 flex-col gap-3 rounded-xl border border-t-2 bg-muted/40 p-3 transition-colors",
-                COLUMN_STYLES[stage],
-                dragOver === stage && "border-primary/50 bg-primary/5"
-              )}
-            >
-              <div className="flex items-center justify-between px-1">
-                <ValuePill translate={translate} value={stage} />
-                <span className="text-xs font-medium text-muted-foreground">
-                  {columnJobs.length}
-                </span>
-              </div>
-              {columnJobs.map((job) => (
-                <BoardCard
-                  key={job.id}
-                  job={job}
-                  translate={translate}
-                  onOpen={() => openChild(String(job.id))}
-                />
-              ))}
-              {columnJobs.length === 0 ? (
-                <p className="rounded-lg border border-dashed px-3 py-6 text-center text-xs text-muted-foreground">
-                  {tt(translate, "it.fulfillment.emptyColumn", "Drop jobs here")}
-                </p>
-              ) : null}
-            </div>
-          );
-        })}
+        {FULFILLMENT_STAGES.map((stage) => (
+          <FulfillmentColumn
+            key={stage}
+            stage={stage}
+            limit={limitFor(stage)}
+            onShowMore={() => showMore(stage)}
+            dragOver={dragOver === stage}
+            onDragOver={(event) => {
+              event.preventDefault();
+              setDragOver(stage);
+            }}
+            onDragLeave={() =>
+              setDragOver((current) => (current === stage ? null : current))
+            }
+            onDrop={(event) => handleDrop(event, stage)}
+            translate={translate}
+            onOpen={openChild}
+          />
+        ))}
       </div>
       <Outlet />
+    </div>
+  );
+}
+
+/**
+ * One board column. Each column runs its own query filtered to its stage and
+ * capped at `limit`, so opening the board costs four small requests instead of
+ * one that drags in every job.
+ */
+function FulfillmentColumn({
+  stage,
+  limit,
+  onShowMore,
+  dragOver,
+  onDragOver,
+  onDragLeave,
+  onDrop,
+  translate,
+  onOpen,
+}: {
+  stage: Stage;
+  limit: number;
+  onShowMore: () => void;
+  dragOver: boolean;
+  onDragOver: (event: DragEvent) => void;
+  onDragLeave: () => void;
+  onDrop: (event: DragEvent) => void;
+  translate: ReturnType<typeof useTranslate>;
+  onOpen: (path: string) => void;
+}) {
+  const { result, query } = useList<FulfillmentJobRecord>({
+    resource: "it_fulfillment_jobs",
+    pagination: { mode: "server", currentPage: 1, pageSize: limit },
+    filters: [{ field: "status", operator: "eq", value: stage }],
+    sorters: [{ field: "dueDate", order: "asc" }],
+    meta: { appends: ["request", "assignee"] },
+    queryOptions: { retry: false },
+  });
+
+  const jobs = result.data;
+
+  return (
+    <div
+      onDragOver={onDragOver}
+      onDragLeave={onDragLeave}
+      onDrop={onDrop}
+      className={cn(
+        "flex min-h-48 flex-col gap-3 rounded-xl border border-t-2 bg-muted/40 p-3 transition-colors",
+        COLUMN_STYLES[stage],
+        dragOver && "border-primary/50 bg-primary/5"
+      )}
+    >
+      <div className="flex items-center justify-between px-1">
+        <ValuePill translate={translate} value={stage} />
+        <span className="text-xs font-medium text-muted-foreground">
+          {query.isLoading ? "—" : result.total}
+        </span>
+      </div>
+      {jobs.map((job) => (
+        <BoardCard
+          key={job.id}
+          job={job}
+          translate={translate}
+          onOpen={() => onOpen(String(job.id))}
+        />
+      ))}
+      {!query.isLoading && jobs.length === 0 ? (
+        <p className="rounded-lg border border-dashed px-3 py-6 text-center text-xs text-muted-foreground">
+          {tt(translate, "it.fulfillment.emptyColumn", "Drop jobs here")}
+        </p>
+      ) : null}
+      <ShowMore loaded={jobs.length} total={result.total} onClick={onShowMore} />
     </div>
   );
 }
@@ -215,7 +284,14 @@ function BoardCard({
     <div
       draggable
       onDragStart={(event) =>
-        event.dataTransfer.setData("text/job-id", String(job.id))
+        event.dataTransfer.setData(
+          "text/job",
+          JSON.stringify({
+            id: job.id,
+            status: job.status,
+            requestId: job.requestId,
+          })
+        )
       }
       onClick={onOpen}
       className="cursor-pointer space-y-2 rounded-lg border bg-card p-3 text-left shadow-xs transition-shadow hover:shadow-md active:cursor-grabbing"

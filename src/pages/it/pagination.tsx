@@ -1,9 +1,16 @@
+import { useTranslate } from "@refinedev/core";
 import { useEffect, useRef, useState } from "react";
 
 import { DataTablePagination } from "@/components/data-table/data-table-pagination";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 export const DEFAULT_PAGE_SIZE = 20;
+
+// Kanban columns and grouped sections cannot paginate — a column has to show a
+// contiguous run of cards to be draggable, and a group has to stay whole to
+// mean anything. They cap instead, and reveal the rest on demand.
+export const COLUMN_PAGE_SIZE = 20;
 
 /**
  * Debounce a fast-changing value (a search box) before it reaches the API, so
@@ -83,5 +90,62 @@ export function ListPagination({
         total={rowCount}
       />
     </div>
+  );
+}
+
+/**
+ * Per-column "show more" limits for a board or a grouped list. Each key keeps
+ * its own cap so revealing one column never re-fetches the others.
+ */
+export function useColumnLimits<K extends string>(
+  keys: readonly K[],
+  step: number = COLUMN_PAGE_SIZE
+) {
+  const [limits, setLimits] = useState<Record<string, number>>(() =>
+    Object.fromEntries(keys.map((key) => [key, step]))
+  );
+
+  return {
+    limitFor: (key: K) => limits[key] ?? step,
+    showMore: (key: K) =>
+      setLimits((current) => ({ ...current, [key]: (current[key] ?? step) + step })),
+  };
+}
+
+/**
+ * Footer for a capped column: reveals the next batch, or nothing once the
+ * column is fully loaded.
+ */
+export function ShowMore({
+  loaded,
+  total,
+  onClick,
+  className,
+}: {
+  loaded: number;
+  total?: number;
+  onClick: () => void;
+  className?: string;
+}) {
+  const translate = useTranslate();
+  const remaining = (total ?? 0) - loaded;
+  if (remaining <= 0) return null;
+
+  return (
+    <Button
+      type="button"
+      variant="ghost"
+      size="sm"
+      onClick={onClick}
+      className={cn("w-full text-xs text-muted-foreground", className)}
+    >
+      {/* Interpolated as `n`, not `count`: `count` would send i18next down its
+          plural-suffix lookup and miss the key. */}
+      {translate(
+        "it.common.showMore",
+        { ns: "starter", n: remaining },
+        `Show ${remaining} more`
+      )}
+    </Button>
   );
 }

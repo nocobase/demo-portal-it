@@ -17,7 +17,7 @@ import {
   Wifi,
   type LucideIcon,
 } from "lucide-react";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Outlet, useNavigate } from "react-router";
 
 import { Button } from "@/components/ui/button";
@@ -28,8 +28,10 @@ import {
   PageHeader,
   ValuePill,
   tt,
+  useDimensionCounts,
   type RequestTypeRecord,
 } from "./lib";
+import { COLUMN_PAGE_SIZE, ShowMore } from "./pagination";
 import { useOpenContextualChild } from "./route-surfaces";
 
 const ICONS: Record<string, LucideIcon> = {
@@ -60,33 +62,27 @@ export function ServiceCatalog() {
   const navigate = useNavigate();
   const openChild = useOpenContextualChild();
 
-  const { result, query } = useList<RequestTypeRecord>({
-    resource: "it_request_types",
-    pagination: { mode: "server", currentPage: 1, pageSize: 100 },
-    sorters: [{ field: "category", order: "asc" }],
-    queryOptions: { retry: false },
-  });
+  // The category list comes from a server-side grouped count, so the catalog
+  // knows every section without pulling every service. Each section then loads
+  // only its own first batch of cards.
+  // it_request_types declares no "id" field, so the count measure targets
+  // "name". Counting a field the collection does not declare returns ungrouped,
+  // count-less rows instead of an error.
+  const { counts, total, isLoading } = useDimensionCounts(
+    "it_request_types",
+    "category",
+    [],
+    "name"
+  );
 
-  const rows = result.data;
-
-  const groups = useMemo(() => {
-    const byCat = new Map<string, RequestTypeRecord[]>();
-    for (const r of rows) {
-      const key = r.category ?? "Other";
-      const arr = byCat.get(key) ?? [];
-      arr.push(r);
-      byCat.set(key, arr);
-    }
-    const ordered: Array<[string, RequestTypeRecord[]]> = [];
+  const categories = useMemo(() => {
+    const remaining = new Set(Object.keys(counts));
+    const ordered: string[] = [];
     for (const c of CATEGORY_ORDER) {
-      if (byCat.has(c)) {
-        ordered.push([c, byCat.get(c)!]);
-        byCat.delete(c);
-      }
+      if (remaining.delete(c)) ordered.push(c);
     }
-    for (const [c, arr] of byCat) ordered.push([c, arr]);
-    return ordered;
-  }, [rows]);
+    return [...ordered, ...Array.from(remaining).sort()];
+  }, [counts]);
 
   return (
     <div className="flex flex-col gap-6">
@@ -105,15 +101,65 @@ export function ServiceCatalog() {
         }
       />
 
-      {query.isLoading ? (
+      {isLoading ? (
         <EmptyState label={tt(translate, "it.common.loading", "Loading...")} />
-      ) : rows.length === 0 ? (
+      ) : total === 0 ? (
         <EmptyState
           label={tt(translate, "it.catalog.empty", "No services are published yet.")}
         />
       ) : (
         <div className="flex flex-col gap-8">
-          {groups.map(([category, items]) => (
+          {categories.map((category) => (
+            <CatalogSection
+              key={category}
+              category={category}
+              total={counts[category] ?? 0}
+              translate={translate}
+              navigate={navigate}
+              openChild={openChild}
+            />
+          ))}
+        </div>
+      )}
+      <Outlet />
+    </div>
+  );
+}
+
+/**
+ * One category section. Loads its own capped batch of services and reveals the
+ * rest on demand, so a large catalog never arrives in a single response.
+ */
+function CatalogSection({
+  category,
+  total,
+  translate,
+  navigate,
+  openChild,
+}: {
+  category: string;
+  total: number;
+  translate: ReturnType<typeof useTranslate>;
+  navigate: ReturnType<typeof useNavigate>;
+  openChild: (path: string) => void;
+}) {
+  const [limit, setLimit] = useState(COLUMN_PAGE_SIZE);
+
+  const { result } = useList<RequestTypeRecord>({
+    resource: "it_request_types",
+    pagination: { mode: "server", currentPage: 1, pageSize: limit },
+    filters: [
+      category === "Other"
+        ? { field: "category", operator: "eq", value: null }
+        : { field: "category", operator: "eq", value: category },
+    ],
+    sorters: [{ field: "name", order: "asc" }],
+    queryOptions: { retry: false },
+  });
+
+  const items = result.data;
+
+  return (
             <section key={category} className="flex flex-col gap-3">
               <h3 className="text-sm font-semibold text-muted-foreground">
                 {tt(
@@ -200,11 +246,11 @@ export function ServiceCatalog() {
                   );
                 })}
               </div>
+              <ShowMore
+                loaded={items.length}
+                total={total}
+                onClick={() => setLimit((current) => current + COLUMN_PAGE_SIZE)}
+              />
             </section>
-          ))}
-        </div>
-      )}
-      <Outlet />
-    </div>
   );
 }

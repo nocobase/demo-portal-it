@@ -85,6 +85,7 @@ export const starter = {
   "table.pagination.previous": "Go to previous page",
   "table.pagination.next": "Go to next page",
   "table.pagination.last": "Go to last page",
+  "it.common.showMore": "Show {{n}} more",
   "notifications.success": "Success",
   "notifications.createSuccess": "Successfully created {{resource}}",
   "notifications.editSuccess": "Successfully updated {{resource}}",
