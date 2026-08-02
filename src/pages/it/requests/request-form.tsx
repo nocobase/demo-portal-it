@@ -8,10 +8,10 @@ import {
   useWarnAboutChange,
   type HttpError,
 } from "@refinedev/core";
-import { Sparkles } from "lucide-react";
-import { useEffect, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 import { useParams, useSearchParams } from "react-router";
 
+import { AiFillPanel, useAiFill, type AiFillField } from "@/components/ai-fill";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -59,7 +59,9 @@ const CATEGORY_FROM_TYPE: Record<string, string> = {
 type Values = Record<string, string>;
 
 /* ------------------------------------------------------------------ */
-/* AI assist classifier (ported from it-console)                       */
+/* Offline keyword classifier.                                          */
+/* Used only as the fallback when the AI assistant cannot be reached;    */
+/* the panel tells the user which of the two produced the values.        */
 /* ------------------------------------------------------------------ */
 
 function analyzeRequest(problem: string) {
@@ -194,9 +196,6 @@ function RequestCreateForm({ typeRecord }: { typeRecord?: RequestTypeRecord }) {
     priority: "Medium",
   });
   const [error, setError] = useState("");
-  const [problem, setProblem] = useState("");
-  const [suggestedFix, setSuggestedFix] = useState("");
-  const [analyzing, setAnalyzing] = useState(false);
   const [prefilled, setPrefilled] = useState(false);
 
   const create = useCreate<RequestRecord, HttpError>();
@@ -228,35 +227,92 @@ function RequestCreateForm({ typeRecord }: { typeRecord?: RequestTypeRecord }) {
     setWarnWhen(true);
   };
 
-  const fillWithAi = () => {
-    if (!problem.trim()) {
-      setError(
-        tt(
-          translate,
-          "it.requests.ai.validation.describeFirst",
-          "Describe the problem first so AI assist can classify it."
-        )
-      );
-      return;
-    }
-    setAnalyzing(true);
-    setError("");
-    window.setTimeout(() => {
+  // The field contract handed to the AI assistant. The allowed values are the
+  // ones the Select inputs below actually render: a value outside these lists
+  // would be stored but never displayed, so it is rejected before it lands.
+  const aiFields = useMemo<AiFillField[]>(
+    () => [
+      {
+        name: "subject",
+        title: tt(translate, "it.field.subject", "Subject"),
+        type: "string",
+        description: "A short title for the request, at most 80 characters.",
+        required: true,
+      },
+      {
+        name: "requestType",
+        title: tt(translate, "it.field.requestType", "Request type"),
+        type: "string",
+        enum: REQUEST_TYPES,
+      },
+      {
+        name: "priority",
+        title: tt(translate, "it.field.priority", "Priority"),
+        type: "string",
+        enum: PRIORITIES,
+      },
+      {
+        name: "category",
+        title: tt(translate, "it.field.category", "Category"),
+        type: "string",
+        enum: CATEGORIES,
+      },
+      {
+        name: "description",
+        title: tt(translate, "it.field.description", "Description"),
+        type: "text",
+        description: "Restate the problem in clear English.",
+      },
+      {
+        name: "suggestedFix",
+        title: tt(translate, "it.field.suggestedFix", "Suggested resolution"),
+        type: "text",
+        description:
+          "One or two sentences of first-line troubleshooting advice for the IT team.",
+      },
+    ],
+    [translate]
+  );
+
+  const localFallback = useCallback(
+    (problem: string) => {
       const result = analyzeRequest(problem);
-      setValues((p) => ({
-        ...p,
+      return {
         requestType: result.requestType,
         priority: result.priority,
         category: result.category,
-        description: p.description || problem,
+        description: problem,
+        suggestedFix: tt(
+          translate,
+          result.resolution.key,
+          result.resolution.fallback
+        ),
+      };
+    },
+    [translate]
+  );
+
+  const ai = useAiFill({
+    formId: "it-request-create",
+    title: tt(translate, "it.requests.create.title", "New request"),
+    fields: aiFields,
+    getValues: () => values,
+    setValues: (next) => {
+      setValues((previous) => ({
+        ...previous,
+        ...Object.fromEntries(
+          Object.entries(next).map(([key, value]) => [key, String(value ?? "")])
+        ),
       }));
-      setSuggestedFix(
-        tt(translate, result.resolution.key, result.resolution.fallback)
-      );
       setWarnWhen(true);
-      setAnalyzing(false);
-    }, 350);
-  };
+    },
+    instructions:
+      "Treat a request for something new (access, equipment, software, an install) as a Service request, " +
+      "and something already broken or blocking work as an Incident.",
+    fallback: localFallback,
+  });
+
+  const suggestedFix = values.suggestedFix ?? "";
 
   const submit = (e: FormEvent) => {
     e.preventDefault();
@@ -275,7 +331,6 @@ function RequestCreateForm({ typeRecord }: { typeRecord?: RequestTypeRecord }) {
     }
     payload.status = "New";
     payload.slaDueAt = slaDueAt;
-    if (suggestedFix) payload.suggestedFix = suggestedFix;
 
     create.mutate(
       { resource: "it_requests", values: payload },
@@ -291,71 +346,41 @@ function RequestCreateForm({ typeRecord }: { typeRecord?: RequestTypeRecord }) {
 
   return (
     <form onSubmit={submit} className="grid min-h-0 gap-4 overflow-y-auto p-5">
-          {/* AI assist panel */}
-          <section className="relative overflow-hidden rounded-xl border border-sky-400/35 bg-sky-50/60 p-3 dark:bg-sky-400/[0.07]">
-            <div className="absolute inset-y-0 left-0 w-0.5 bg-sky-400" />
-            <div className="mb-2 flex items-center gap-2 text-sky-700 dark:text-sky-200">
-              <span className="grid size-6 place-items-center rounded-md bg-sky-400/15">
-                <Sparkles className="size-3.5" />
-              </span>
-              <div>
-                <div className="text-xs font-bold tracking-[0.08em] uppercase">
-                  {tt(translate, "it.requests.ai.title", "AI assist")}
+          <AiFillPanel
+            ai={ai}
+            title={tt(translate, "it.requests.ai.title", "AI assist")}
+            description={tt(
+              translate,
+              "it.requests.ai.description",
+              "Describe the problem in plain language. AI assist will structure the request for you."
+            )}
+            inputLabel={tt(
+              translate,
+              "it.requests.ai.problemLabel",
+              "Describe your IT problem"
+            )}
+            placeholder={tt(
+              translate,
+              "it.requests.ai.problemPlaceholder",
+              "Example: I cannot connect to VPN after resetting my password and need access before today's client call."
+            )}
+            footer={
+              suggestedFix ? (
+                <div className="mt-3 border-t border-sky-400/20 pt-2">
+                  <div className="text-[10px] font-bold tracking-[0.08em] text-sky-700 uppercase dark:text-sky-200">
+                    {tt(
+                      translate,
+                      "it.requests.ai.suggestedResolution",
+                      "Suggested resolution"
+                    )}
+                  </div>
+                  <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                    {suggestedFix}
+                  </p>
                 </div>
-                <p className="text-[11px] text-muted-foreground">
-                  {tt(
-                    translate,
-                    "it.requests.ai.description",
-                    "Describe the problem in plain language. AI assist will structure the request for you."
-                  )}
-                </p>
-              </div>
-            </div>
-            <Textarea
-              aria-label={tt(
-                translate,
-                "it.requests.ai.problemLabel",
-                "Describe your IT problem"
-              )}
-              value={problem}
-              onChange={(e) => setProblem(e.target.value)}
-              placeholder={tt(
-                translate,
-                "it.requests.ai.problemPlaceholder",
-                "Example: I cannot connect to VPN after resetting my password and need access before today's client call."
-              )}
-              className="min-h-20 border-sky-400/20 bg-background/60 text-sm"
-            />
-            <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
-              <span className="text-[10px] font-medium tracking-wide text-sky-700/80 uppercase dark:text-sky-200/80">
-                {tt(
-                  translate,
-                  "it.requests.ai.privacy",
-                  "Local analysis · no data leaves this form"
-                )}
-              </span>
-              <Button type="button" size="sm" onClick={fillWithAi} disabled={analyzing}>
-                <Sparkles />
-                {analyzing
-                  ? tt(translate, "it.requests.ai.analyzing", "Analyzing...")
-                  : tt(translate, "it.requests.ai.fill", "Fill with AI")}
-              </Button>
-            </div>
-            {suggestedFix ? (
-              <div className="mt-3 border-t border-sky-400/20 pt-2">
-                <div className="text-[10px] font-bold tracking-[0.08em] text-sky-700 uppercase dark:text-sky-200">
-                  {tt(
-                    translate,
-                    "it.requests.ai.suggestedResolution",
-                    "Suggested resolution"
-                  )}
-                </div>
-                <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                  {suggestedFix}
-                </p>
-              </div>
-            ) : null}
-          </section>
+              ) : null
+            }
+          />
 
           {/* Fields */}
           <div className="grid gap-3 sm:grid-cols-2">
