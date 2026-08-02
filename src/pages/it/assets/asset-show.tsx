@@ -57,6 +57,7 @@ type TimelineItem = {
   title: string;
   detail?: string;
   status?: string;
+  repairId?: number;
 };
 
 export function AssetShow() {
@@ -221,6 +222,7 @@ export function AssetShow() {
         .filter(Boolean)
         .join(" · "),
       status: r.status ?? undefined,
+      repairId: r.id,
     })),
   ].sort((a, b) => new Date(b.date ?? 0).getTime() - new Date(a.date ?? 0).getTime());
 
@@ -382,18 +384,37 @@ export function AssetShow() {
                               : "bg-blue-500"
                         }`}
                       />
-                      <div className="min-w-0 flex-1 rounded-lg border bg-card px-3 py-2">
-                        <div className="flex items-baseline justify-between gap-2">
-                          <span className="text-sm font-medium">{item.title}</span>
-                          <span className="shrink-0 text-xs text-muted-foreground">{formatDate(item.date)}</span>
-                        </div>
-                        {item.detail ? <p className="mt-0.5 text-xs text-muted-foreground">{item.detail}</p> : null}
-                        {item.status ? (
-                          <div className="mt-1">
-                            <ValuePill translate={translate} value={item.status} className="h-5" />
+                      {item.kind === "repair" && item.repairId != null ? (
+                        <button
+                          type="button"
+                          onClick={() => openChild(`repairs/${item.repairId}`)}
+                          className="min-w-0 flex-1 rounded-lg border bg-card px-3 py-2 text-left transition-colors hover:bg-accent/40"
+                        >
+                          <div className="flex items-baseline justify-between gap-2">
+                            <span className="text-sm font-medium">{item.title}</span>
+                            <span className="shrink-0 text-xs text-muted-foreground">{formatDate(item.date)}</span>
                           </div>
-                        ) : null}
-                      </div>
+                          {item.detail ? <p className="mt-0.5 text-xs text-muted-foreground">{item.detail}</p> : null}
+                          {item.status ? (
+                            <div className="mt-1">
+                              <ValuePill translate={translate} value={item.status} className="h-5" />
+                            </div>
+                          ) : null}
+                        </button>
+                      ) : (
+                        <div className="min-w-0 flex-1 rounded-lg border bg-card px-3 py-2">
+                          <div className="flex items-baseline justify-between gap-2">
+                            <span className="text-sm font-medium">{item.title}</span>
+                            <span className="shrink-0 text-xs text-muted-foreground">{formatDate(item.date)}</span>
+                          </div>
+                          {item.detail ? <p className="mt-0.5 text-xs text-muted-foreground">{item.detail}</p> : null}
+                          {item.status ? (
+                            <div className="mt-1">
+                              <ValuePill translate={translate} value={item.status} className="h-5" />
+                            </div>
+                          ) : null}
+                        </div>
+                      )}
                     </li>
                   ))}
                 </ol>

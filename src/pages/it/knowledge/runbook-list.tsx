@@ -1,8 +1,9 @@
 import { useList, useTranslate } from "@refinedev/core";
-import { BookOpen, Eye, Search } from "lucide-react";
+import { BookOpen, Eye, Plus, Search } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Outlet } from "react-router";
 
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
@@ -52,6 +53,12 @@ export function RunbookList() {
       <PageHeader
         title={tt(translate, "it.knowledge.title", "Runbooks")}
         description={tt(translate, "it.knowledge.description", "Step-by-step procedures and troubleshooting guides maintained by the IT team.")}
+        actions={
+          <Button type="button" onClick={() => openChild("create")}>
+            <Plus />
+            {tt(translate, "it.knowledge.create.title", "New runbook")}
+          </Button>
+        }
       />
 
       <div className="flex flex-wrap items-center gap-2">

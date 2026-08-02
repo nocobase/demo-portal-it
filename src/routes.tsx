@@ -20,15 +20,22 @@ import { AssetShow } from "@/pages/it/assets/asset-show";
 import { AssetCreate, AssetEdit } from "@/pages/it/assets/asset-form";
 import { AssignmentsOverview } from "@/pages/it/assignments";
 import { ServiceCatalog } from "@/pages/it/catalog";
+import { CatalogItemCreate, CatalogItemEdit } from "@/pages/it/catalog-form";
 import { RequestList } from "@/pages/it/requests/request-list";
 import { RequestShow } from "@/pages/it/requests/request-show";
-import { RequestCreate } from "@/pages/it/requests/request-form";
-import { FulfillmentBoard } from "@/pages/it/fulfillment";
-import { RepairsBoard, RepairCreate } from "@/pages/it/repairs";
+import { RequestCreate, RequestEdit } from "@/pages/it/requests/request-form";
+import {
+  FulfillmentBoard,
+  FulfillmentCreate,
+  FulfillmentEdit,
+  FulfillmentShow,
+} from "@/pages/it/fulfillment";
+import { RepairsBoard, RepairCreate, RepairEdit, RepairShow } from "@/pages/it/repairs";
 import { LicenseList } from "@/pages/it/licenses/license-list";
 import { LicenseCreate, LicenseEdit } from "@/pages/it/licenses/license-form";
 import { RunbookList } from "@/pages/it/knowledge/runbook-list";
 import { RunbookShow } from "@/pages/it/knowledge/runbook-show";
+import { RunbookCreate, RunbookEdit } from "@/pages/it/knowledge/runbook-form";
 import { ReportsPage } from "@/pages/it/reports";
 
 export const registryRoutesEnabled = false;
@@ -76,6 +83,14 @@ export const appRoutes = defineAppRoutes([
         element: gate("it_assets", "get", <AssetShow />),
         children: [
           { name: "it-assets.edit", path: "edit", resourceAction: "edit", element: gate("it_assets", "update", <AssetEdit />) },
+          {
+            // Nested one level deeper: a repair opened from within an asset's
+            // detail popup gets its own URL-addressable child route, reusing
+            // the same RepairShow surface as the canonical /repairs/:id.
+            name: "it-assets.show.repair",
+            path: "repairs/:repairId",
+            element: gate("it_repairs", "get", <RepairShow />),
+          },
         ],
       },
     ],
@@ -91,6 +106,10 @@ export const appRoutes = defineAppRoutes([
     path: "/catalog",
     element: gate("it_request_types", "list", <ServiceCatalog />),
     resource: navMeta("Service catalog", "it.nav.catalog", <LayoutGrid />, 4, "it_request_types"),
+    children: [
+      { name: "it-catalog.create", path: "create", resourceAction: "create", element: gate("it_request_types", "create", <CatalogItemCreate />) },
+      { name: "it-catalog.edit", path: ":id/edit", resourceAction: "edit", element: gate("it_request_types", "update", <CatalogItemEdit />) },
+    ],
   },
   {
     name: "it-requests",
@@ -99,7 +118,23 @@ export const appRoutes = defineAppRoutes([
     resource: navMeta("Requests", "it.nav.requests", <ClipboardList />, 5, "it_requests"),
     children: [
       { name: "it-requests.create", path: "new", resourceAction: "create", element: gate("it_requests", "create", <RequestCreate />) },
-      { name: "it-requests.show", path: ":id", element: gate("it_requests", "get", <RequestShow />) },
+      {
+        name: "it-requests.show",
+        path: ":id",
+        element: gate("it_requests", "get", <RequestShow />),
+        children: [
+          { name: "it-requests.edit", path: "edit", resourceAction: "edit", element: gate("it_requests", "update", <RequestEdit />) },
+          {
+            // Nested one level deeper: a fulfilment job opened from within a
+            // request's detail popup gets its own URL-addressable child
+            // route, reusing the same FulfillmentShow surface as the
+            // canonical /fulfillment/:id.
+            name: "it-requests.show.job",
+            path: "jobs/:jobId",
+            element: gate("it_fulfillment_jobs", "get", <FulfillmentShow />),
+          },
+        ],
+      },
     ],
   },
   {
@@ -107,6 +142,18 @@ export const appRoutes = defineAppRoutes([
     path: "/fulfillment",
     element: gate("it_fulfillment_jobs", "list", <FulfillmentBoard />),
     resource: navMeta("Fulfillment", "it.nav.fulfillment", <ListChecks />, 6, "it_fulfillment_jobs"),
+    children: [
+      { name: "it-fulfillment.create", path: "create", resourceAction: "create", element: gate("it_fulfillment_jobs", "create", <FulfillmentCreate />) },
+      {
+        name: "it-fulfillment.show",
+        path: ":id",
+        resourceAction: "show",
+        element: gate("it_fulfillment_jobs", "get", <FulfillmentShow />),
+        children: [
+          { name: "it-fulfillment.edit", path: "edit", resourceAction: "edit", element: gate("it_fulfillment_jobs", "update", <FulfillmentEdit />) },
+        ],
+      },
+    ],
   },
   {
     name: "it-repairs",
@@ -115,6 +162,15 @@ export const appRoutes = defineAppRoutes([
     resource: navMeta("Repairs", "it.nav.repairs", <Wrench />, 7, "it_repairs"),
     children: [
       { name: "it-repairs.create", path: "create", resourceAction: "create", element: gate("it_repairs", "create", <RepairCreate />) },
+      {
+        name: "it-repairs.show",
+        path: ":id",
+        resourceAction: "show",
+        element: gate("it_repairs", "get", <RepairShow />),
+        children: [
+          { name: "it-repairs.edit", path: "edit", resourceAction: "edit", element: gate("it_repairs", "update", <RepairEdit />) },
+        ],
+      },
     ],
   },
   {
@@ -133,7 +189,15 @@ export const appRoutes = defineAppRoutes([
     element: gate("it_runbooks", "list", <RunbookList />),
     resource: navMeta("Runbooks", "it.nav.knowledge", <BookOpen />, 9, "it_runbooks"),
     children: [
-      { name: "it-knowledge.show", path: ":id", element: gate("it_runbooks", "get", <RunbookShow />) },
+      { name: "it-knowledge.create", path: "create", resourceAction: "create", element: gate("it_runbooks", "create", <RunbookCreate />) },
+      {
+        name: "it-knowledge.show",
+        path: ":id",
+        element: gate("it_runbooks", "get", <RunbookShow />),
+        children: [
+          { name: "it-knowledge.edit", path: "edit", resourceAction: "edit", element: gate("it_runbooks", "update", <RunbookEdit />) },
+        ],
+      },
     ],
   },
   {

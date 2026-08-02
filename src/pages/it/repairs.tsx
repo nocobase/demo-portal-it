@@ -1,17 +1,23 @@
 import {
   useCreate,
   useList,
+  useShow,
   useTranslate,
   useUpdate,
   type HttpError,
 } from "@refinedev/core";
 import { useWarnAboutChange } from "@refinedev/core";
-import { Plus } from "lucide-react";
+import { Pencil, Plus } from "lucide-react";
 import { useState, type DragEvent, type FormEvent } from "react";
+import { useNavigate, useOutlet, useParams } from "react-router";
 import { Outlet } from "react-router";
 
+import { LoadingState } from "@/components/app-shell/loading-state";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
@@ -22,12 +28,14 @@ import {
 } from "@/components/ui/select";
 import {
   RouteDialog,
+  RouteDrawer,
   useRefineUnsavedChangesGuard,
 } from "@/extensions/nocobase-route-surfaces";
 import { useRouteSurfaceClose } from "@nocobase/portal-sdk/routing";
 import { cn } from "@/lib/utils";
 
 import {
+  Field,
   KpiCard,
   PageHeader,
   REPAIR_STAGES,
@@ -159,6 +167,7 @@ export function RepairsBoard() {
                     key={repair.id}
                     repair={repair}
                     translate={translate}
+                    onOpen={() => openChild(String(repair.id))}
                   />
                 ))}
                 {stageRepairs.length === 0 ? (
@@ -179,9 +188,11 @@ export function RepairsBoard() {
 function RepairCard({
   repair,
   translate,
+  onOpen,
 }: {
   repair: RepairRecord;
   translate: ReturnType<typeof useTranslate>;
+  onOpen: () => void;
 }) {
   return (
     <div
@@ -189,7 +200,8 @@ function RepairCard({
       onDragStart={(event) =>
         event.dataTransfer.setData("text/repair-id", String(repair.id))
       }
-      className="cursor-grab space-y-2 rounded-lg border bg-card p-3 text-left shadow-xs transition-shadow hover:shadow-md active:cursor-grabbing"
+      onClick={onOpen}
+      className="cursor-pointer space-y-2 rounded-lg border bg-card p-3 text-left shadow-xs transition-shadow hover:shadow-md active:cursor-grabbing"
     >
       <p className="line-clamp-2 text-sm font-medium">{repair.issue}</p>
       <div className="flex items-center justify-between gap-2">
@@ -399,6 +411,183 @@ function RepairCreateForm() {
         </Button>
         <Button type="submit" disabled={create.mutation.isPending}>
           {tt(translate, "it.repairs.create.submit", "Log repair")}
+        </Button>
+      </div>
+    </form>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Show (also mounted as a nested child under an asset's detail)      */
+/* ------------------------------------------------------------------ */
+
+export function RepairShow() {
+  const translate = useTranslate();
+  const navigate = useNavigate();
+  const { repairId, id } = useParams<{ repairId?: string; id?: string }>();
+  const recordId = repairId ?? id;
+  const closeTo = useContextualCloseTo();
+  const openChild = useOpenContextualChild();
+  const nested = useOutlet();
+  const { result: record, query } = useShow<RepairRecord>({
+    resource: "it_repairs",
+    id: recordId,
+    meta: { appends: ["asset"] },
+  });
+
+  return (
+    <RouteDrawer
+      title={
+        query.isLoading && !record ? (
+          <Skeleton className="h-6 w-56" />
+        ) : (
+          <span className="flex items-center gap-2">
+            <span className="truncate">{record?.issue ?? tt(translate, "it.repairs.title", "Repairs")}</span>
+            {record ? <ValuePill translate={translate} value={record.status} /> : null}
+          </span>
+        )
+      }
+      description={record?.asset?.name ?? ""}
+      closeLabel={tt(translate, "buttons.close", "Close")}
+      closeTo={closeTo}
+      nested={nested}
+      actions={
+        record ? (
+          <Button type="button" variant="outline" size="sm" onClick={() => openChild("edit")}>
+            <Pencil />
+            {tt(translate, "buttons.edit", "Edit")}
+          </Button>
+        ) : null
+      }
+    >
+      <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5">
+        {query.isLoading ? (
+          <LoadingState className="min-h-64" />
+        ) : query.isError || !record ? (
+          <Alert variant="destructive">
+            <AlertDescription>
+              {tt(translate, "it.repairs.show.loadError", "This repair may no longer exist.")}
+            </AlertDescription>
+          </Alert>
+        ) : (
+          <div className="space-y-5">
+            <section className="grid gap-3 sm:grid-cols-2">
+              <Field label={tt(translate, "it.field.asset", "Asset")}>
+                {record.asset ? (
+                  <button
+                    type="button"
+                    className="text-primary underline-offset-2 hover:underline"
+                    onClick={() => navigate(`/asset-register/${record.assetId}`)}
+                  >
+                    {record.asset.name}
+                    {record.asset.assetTag ? ` (${record.asset.assetTag})` : ""}
+                  </button>
+                ) : (
+                  "—"
+                )}
+              </Field>
+              <Field label={tt(translate, "it.field.vendor", "Vendor")}>
+                {record.vendor || tt(translate, "it.repairs.internal", "Internal IT")}
+              </Field>
+              <Field label={tt(translate, "it.field.cost", "Cost")}>{money(record.cost)}</Field>
+              <Field label={tt(translate, "it.field.startedAt", "Started at")}>{formatDate(record.startedAt)}</Field>
+              <Field label={tt(translate, "it.field.completedAt", "Completed")}>{formatDate(record.completedAt)}</Field>
+            </section>
+            {record.notes ? (
+              <>
+                <Separator />
+                <Field label={tt(translate, "it.field.notes", "Notes")}>
+                  <span className="whitespace-pre-wrap font-normal">{record.notes}</span>
+                </Field>
+              </>
+            ) : null}
+          </div>
+        )}
+      </div>
+    </RouteDrawer>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Edit                                                                */
+/* ------------------------------------------------------------------ */
+
+export function RepairEdit() {
+  const translate = useTranslate();
+  const { repairId, id } = useParams<{ repairId?: string; id?: string }>();
+  const recordId = repairId ?? id;
+  const closeTo = useContextualCloseTo();
+  const { beforeClose, confirmation } = useRefineUnsavedChangesGuard();
+  const { result: record } = useShow<RepairRecord>({ resource: "it_repairs", id: recordId });
+  return (
+    <>
+      <RouteDialog
+        title={tt(translate, "it.repairs.edit.title", "Edit repair")}
+        description={record?.issue ?? ""}
+        closeLabel={tt(translate, "buttons.close", "Close")}
+        closeTo={closeTo}
+        beforeClose={beforeClose}
+        className="sm:max-w-2xl"
+      >
+        <RepairEditForm id={recordId} />
+      </RouteDialog>
+      {confirmation}
+    </>
+  );
+}
+
+function RepairEditForm({ id }: { id?: string }) {
+  const translate = useTranslate();
+  const close = useRouteSurfaceClose();
+  const { setWarnWhen } = useWarnAboutChange();
+  const { result: record } = useShow<RepairRecord>({ resource: "it_repairs", id });
+  const [values, setValues] = useState<Values | null>(null);
+  const [error, setError] = useState("");
+  const update = useUpdate<RepairRecord, HttpError>();
+
+  const current: Values =
+    values ??
+    (record
+      ? {
+          assetId: record.assetId != null ? String(record.assetId) : "",
+          status: record.status ?? "",
+          issue: record.issue ?? "",
+          vendor: record.vendor ?? "",
+          cost: record.cost != null ? String(record.cost) : "",
+          startedAt: record.startedAt ?? "",
+          notes: record.notes ?? "",
+        }
+      : {});
+
+  const set = (k: string, v: string) => {
+    setValues({ ...current, [k]: v });
+    setWarnWhen(true);
+  };
+  const submit = (e: FormEvent) => {
+    e.preventDefault();
+    if (!record) return;
+    setError("");
+    update.mutate(
+      { resource: "it_repairs", id: record.id, values: normalize(current) },
+      {
+        onSuccess: () => {
+          setWarnWhen(false);
+          void close({ skipBeforeClose: true });
+        },
+        onError: (err) => setError(err?.message ?? "Error"),
+      }
+    );
+  };
+  return (
+    <form onSubmit={submit} className="grid min-h-0 gap-4 overflow-y-auto p-5">
+      <RepairFields values={current} set={set} />
+      {error ? <p className="text-xs text-red-500">{error}</p> : null}
+      <div className="flex justify-end gap-2">
+        <Button type="button" variant="outline" onClick={() => void close()}>
+          {tt(translate, "buttons.cancel", "Cancel")}
+        </Button>
+        <Button type="submit" disabled={update.mutation.isPending}>
+          {tt(translate, "buttons.save", "Save")}
         </Button>
       </div>
     </form>

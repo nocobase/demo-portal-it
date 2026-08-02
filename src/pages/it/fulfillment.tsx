@@ -1,10 +1,42 @@
-import { useList, useTranslate, useUpdate } from "@refinedev/core";
-import { useMemo, useState, type DragEvent } from "react";
+import {
+  useCreate,
+  useList,
+  useShow,
+  useTranslate,
+  useUpdate,
+  useWarnAboutChange,
+  type HttpError,
+} from "@refinedev/core";
+import { Pencil, Plus } from "lucide-react";
+import { useMemo, useState, type DragEvent, type FormEvent } from "react";
+import { useNavigate, useOutlet, useParams } from "react-router";
+import { Outlet } from "react-router";
 
+import { LoadingState } from "@/components/app-shell/loading-state";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  RouteDialog,
+  RouteDrawer,
+  useRefineUnsavedChangesGuard,
+} from "@/extensions/nocobase-route-surfaces";
+import { useRouteSurfaceClose } from "@nocobase/portal-sdk/routing";
 import { cn } from "@/lib/utils";
 
 import {
   FULFILLMENT_STAGES,
+  Field,
   KpiCard,
   PageHeader,
   ValuePill,
@@ -12,7 +44,10 @@ import {
   personName,
   tt,
   type FulfillmentJobRecord,
+  type RequestRecord,
+  type UserRef,
 } from "./lib";
+import { useContextualCloseTo, useOpenContextualChild } from "./route-surfaces";
 
 type Stage = (typeof FULFILLMENT_STAGES)[number];
 
@@ -25,6 +60,7 @@ const COLUMN_STYLES: Record<Stage, string> = {
 
 export function FulfillmentBoard() {
   const translate = useTranslate();
+  const openChild = useOpenContextualChild();
   const update = useUpdate();
   const [dragOver, setDragOver] = useState<Stage | null>(null);
 
@@ -84,6 +120,12 @@ export function FulfillmentBoard() {
           "it.fulfillment.description",
           "Drag fulfilment jobs across the board. Completing a job marks its request fulfilled."
         )}
+        actions={
+          <Button type="button" onClick={() => openChild("create")}>
+            <Plus />
+            {tt(translate, "it.fulfillment.actions.new", "New job")}
+          </Button>
+        }
       />
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -139,7 +181,12 @@ export function FulfillmentBoard() {
                 </span>
               </div>
               {columnJobs.map((job) => (
-                <BoardCard key={job.id} job={job} translate={translate} />
+                <BoardCard
+                  key={job.id}
+                  job={job}
+                  translate={translate}
+                  onOpen={() => openChild(String(job.id))}
+                />
               ))}
               {columnJobs.length === 0 ? (
                 <p className="rounded-lg border border-dashed px-3 py-6 text-center text-xs text-muted-foreground">
@@ -150,6 +197,7 @@ export function FulfillmentBoard() {
           );
         })}
       </div>
+      <Outlet />
     </div>
   );
 }
@@ -157,9 +205,11 @@ export function FulfillmentBoard() {
 function BoardCard({
   job,
   translate,
+  onOpen,
 }: {
   job: FulfillmentJobRecord;
   translate: ReturnType<typeof useTranslate>;
+  onOpen: () => void;
 }) {
   return (
     <div
@@ -167,7 +217,8 @@ function BoardCard({
       onDragStart={(event) =>
         event.dataTransfer.setData("text/job-id", String(job.id))
       }
-      className="cursor-grab space-y-2 rounded-lg border bg-card p-3 text-left shadow-xs transition-shadow hover:shadow-md active:cursor-grabbing"
+      onClick={onOpen}
+      className="cursor-pointer space-y-2 rounded-lg border bg-card p-3 text-left shadow-xs transition-shadow hover:shadow-md active:cursor-grabbing"
     >
       <p className="line-clamp-2 text-sm font-medium">{job.title}</p>
       {job.request?.subject ? (
@@ -187,5 +238,375 @@ function BoardCard({
         ) : null}
       </div>
     </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Fields (shared by create + edit)                                   */
+/* ------------------------------------------------------------------ */
+
+type Values = Record<string, string>;
+
+function FulfillmentFields({
+  values,
+  set,
+  showRequest = true,
+}: {
+  values: Values;
+  set: (k: string, v: string) => void;
+  showRequest?: boolean;
+}) {
+  const translate = useTranslate();
+  const { result: users } = useList<UserRef>({
+    resource: "users",
+    pagination: { mode: "server", currentPage: 1, pageSize: 200 },
+    queryOptions: { retry: false },
+    errorNotification: false,
+  });
+  const { result: requests } = useList<RequestRecord>({
+    resource: "it_requests",
+    pagination: { mode: "server", currentPage: 1, pageSize: 200 },
+    sorters: [{ field: "createdAt", order: "desc" }],
+    queryOptions: { retry: false, enabled: showRequest },
+  });
+  return (
+    <div className="grid gap-3 sm:grid-cols-2">
+      <label className="grid gap-1 text-xs font-medium sm:col-span-2">
+        <span>{tt(translate, "it.field.title", "Title")}</span>
+        <Input value={values.title ?? ""} onChange={(e) => set("title", e.target.value)} required />
+      </label>
+      {showRequest ? (
+        <label className="grid gap-1 text-xs font-medium sm:col-span-2">
+          <span>{tt(translate, "it.field.request", "Related request")}</span>
+          <Select value={values.requestId ?? ""} onValueChange={(v) => set("requestId", v ?? "")}>
+            <SelectTrigger className="h-9 w-full">
+              <SelectValue placeholder={tt(translate, "it.common.none", "None")}>
+                {values.requestId
+                  ? requests.data.find((r) => String(r.id) === String(values.requestId))?.subject
+                  : undefined}
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              {requests.data.map((r) => (
+                <SelectItem key={r.id} value={String(r.id)}>
+                  {r.subject}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </label>
+      ) : null}
+      <label className="grid gap-1 text-xs font-medium">
+        <span>{tt(translate, "it.field.status", "Status")}</span>
+        <Select value={values.status ?? ""} onValueChange={(v) => set("status", v ?? "")}>
+          <SelectTrigger className="h-9 w-full">
+            <SelectValue placeholder={tt(translate, "it.common.select", "Select...")} />
+          </SelectTrigger>
+          <SelectContent>
+            {FULFILLMENT_STAGES.map((s) => (
+              <SelectItem key={s} value={s}>
+                {tt(translate, `it.value.${s.toLowerCase().replace(/ /g, "_")}`, s)}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </label>
+      <label className="grid gap-1 text-xs font-medium">
+        <span>{tt(translate, "it.field.priority", "Priority")}</span>
+        <Select value={values.priority ?? ""} onValueChange={(v) => set("priority", v ?? "")}>
+          <SelectTrigger className="h-9 w-full">
+            <SelectValue placeholder={tt(translate, "it.common.select", "Select...")} />
+          </SelectTrigger>
+          <SelectContent>
+            {["Low", "Medium", "High", "Critical"].map((p) => (
+              <SelectItem key={p} value={p}>
+                {tt(translate, `it.value.${p.toLowerCase()}`, p)}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </label>
+      <label className="grid gap-1 text-xs font-medium">
+        <span>{tt(translate, "it.field.dueDate", "Due date")}</span>
+        <Input type="date" value={values.dueDate ?? ""} onChange={(e) => set("dueDate", e.target.value)} />
+      </label>
+      <label className="grid gap-1 text-xs font-medium">
+        <span>{tt(translate, "it.field.assignee", "Assignee")}</span>
+        <Select value={values.assigneeId ?? ""} onValueChange={(v) => set("assigneeId", v ?? "")}>
+          <SelectTrigger className="h-9 w-full">
+            <SelectValue placeholder={tt(translate, "it.common.unassigned", "Unassigned")}>
+              {values.assigneeId
+                ? personName(users.data.find((u) => String(u.id) === String(values.assigneeId)))
+                : undefined}
+            </SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            {users.data.map((u) => (
+              <SelectItem key={u.id} value={String(u.id)}>
+                {personName(u)}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </label>
+      <label className="grid gap-1 text-xs font-medium sm:col-span-2">
+        <span>{tt(translate, "it.field.instructions", "Instructions")}</span>
+        <Textarea
+          value={values.instructions ?? ""}
+          onChange={(e) => set("instructions", e.target.value)}
+          className="min-h-20"
+        />
+      </label>
+    </div>
+  );
+}
+
+function normalizeJob(values: Values) {
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(values)) {
+    if (v === "") continue;
+    if (k === "requestId" || k === "assigneeId") out[k] = Number(v);
+    else out[k] = v;
+  }
+  return out;
+}
+
+/* ------------------------------------------------------------------ */
+/* Create                                                              */
+/* ------------------------------------------------------------------ */
+
+export function FulfillmentCreate() {
+  const translate = useTranslate();
+  const closeTo = useContextualCloseTo();
+  const { beforeClose, confirmation } = useRefineUnsavedChangesGuard();
+  return (
+    <>
+      <RouteDialog
+        title={tt(translate, "it.fulfillment.create.title", "New fulfilment job")}
+        description={tt(translate, "it.fulfillment.create.description", "Create a job independent of a request, or attach it to one.")}
+        closeLabel={tt(translate, "buttons.close", "Close")}
+        closeTo={closeTo}
+        beforeClose={beforeClose}
+        className="sm:max-w-2xl"
+      >
+        <FulfillmentCreateForm />
+      </RouteDialog>
+      {confirmation}
+    </>
+  );
+}
+
+function FulfillmentCreateForm() {
+  const translate = useTranslate();
+  const close = useRouteSurfaceClose();
+  const { setWarnWhen } = useWarnAboutChange();
+  const [values, setValues] = useState<Values>({ status: "Queued" });
+  const [error, setError] = useState("");
+  const create = useCreate<FulfillmentJobRecord, HttpError>();
+  const set = (k: string, v: string) => {
+    setValues((p) => ({ ...p, [k]: v }));
+    setWarnWhen(true);
+  };
+  const submit = (e: FormEvent) => {
+    e.preventDefault();
+    setError("");
+    create.mutate(
+      { resource: "it_fulfillment_jobs", values: normalizeJob(values) },
+      {
+        onSuccess: () => {
+          setWarnWhen(false);
+          void close({ skipBeforeClose: true });
+        },
+        onError: (err) => setError(err?.message ?? "Error"),
+      }
+    );
+  };
+  return (
+    <form onSubmit={submit} className="grid min-h-0 gap-4 overflow-y-auto p-5">
+      <FulfillmentFields values={values} set={set} />
+      {error ? <p className="text-xs text-red-500">{error}</p> : null}
+      <div className="flex justify-end gap-2">
+        <Button type="button" variant="outline" onClick={() => void close()}>
+          {tt(translate, "buttons.cancel", "Cancel")}
+        </Button>
+        <Button type="submit" disabled={create.mutation.isPending}>
+          {tt(translate, "it.fulfillment.create.submit", "Create job")}
+        </Button>
+      </div>
+    </form>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Show (also mounted as a nested child under a request's detail)     */
+/* ------------------------------------------------------------------ */
+
+export function FulfillmentShow() {
+  const translate = useTranslate();
+  const navigate = useNavigate();
+  const { jobId, id } = useParams<{ jobId?: string; id?: string }>();
+  const recordId = jobId ?? id;
+  const closeTo = useContextualCloseTo();
+  const openChild = useOpenContextualChild();
+  const nested = useOutlet();
+  const { result: record, query } = useShow<FulfillmentJobRecord>({
+    resource: "it_fulfillment_jobs",
+    id: recordId,
+    meta: { appends: ["request", "assignee"] },
+  });
+
+  return (
+    <RouteDrawer
+      title={
+        query.isLoading && !record ? (
+          <Skeleton className="h-6 w-56" />
+        ) : (
+          <span className="flex items-center gap-2">
+            <span className="truncate">{record?.title ?? tt(translate, "it.fulfillment.title", "Fulfillment")}</span>
+            {record ? <ValuePill translate={translate} value={record.status} /> : null}
+          </span>
+        )
+      }
+      description={record?.request?.subject ?? ""}
+      closeLabel={tt(translate, "buttons.close", "Close")}
+      closeTo={closeTo}
+      nested={nested}
+      actions={
+        record ? (
+          <Button type="button" variant="outline" size="sm" onClick={() => openChild("edit")}>
+            <Pencil />
+            {tt(translate, "buttons.edit", "Edit")}
+          </Button>
+        ) : null
+      }
+    >
+      <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5">
+        {query.isLoading ? (
+          <LoadingState className="min-h-64" />
+        ) : query.isError || !record ? (
+          <Alert variant="destructive">
+            <AlertDescription>
+              {tt(translate, "it.fulfillment.show.loadError", "This job may no longer exist.")}
+            </AlertDescription>
+          </Alert>
+        ) : (
+          <div className="space-y-5">
+            <section className="grid gap-3 sm:grid-cols-2">
+              <Field label={tt(translate, "it.field.priority", "Priority")}>
+                {record.priority ? <ValuePill translate={translate} value={record.priority} /> : "—"}
+              </Field>
+              <Field label={tt(translate, "it.field.dueDate", "Due date")}>{formatDate(record.dueDate)}</Field>
+              <Field label={tt(translate, "it.field.assignee", "Assignee")}>{personName(record.assignee)}</Field>
+              <Field label={tt(translate, "it.field.request", "Related request")}>
+                {record.request ? (
+                  <button
+                    type="button"
+                    className="text-primary underline-offset-2 hover:underline"
+                    onClick={() => navigate(`/requests/${record.requestId}`)}
+                  >
+                    {record.request.subject}
+                  </button>
+                ) : (
+                  "—"
+                )}
+              </Field>
+            </section>
+            {record.instructions ? (
+              <>
+                <Separator />
+                <Field label={tt(translate, "it.field.instructions", "Instructions")}>
+                  <span className="whitespace-pre-wrap font-normal">{record.instructions}</span>
+                </Field>
+              </>
+            ) : null}
+          </div>
+        )}
+      </div>
+    </RouteDrawer>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Edit                                                                */
+/* ------------------------------------------------------------------ */
+
+export function FulfillmentEdit() {
+  const translate = useTranslate();
+  const { jobId, id } = useParams<{ jobId?: string; id?: string }>();
+  const recordId = jobId ?? id;
+  const closeTo = useContextualCloseTo();
+  const { beforeClose, confirmation } = useRefineUnsavedChangesGuard();
+  const { result: record } = useShow<FulfillmentJobRecord>({ resource: "it_fulfillment_jobs", id: recordId });
+  return (
+    <>
+      <RouteDialog
+        title={tt(translate, "it.fulfillment.edit.title", "Edit fulfilment job")}
+        description={record?.title ?? ""}
+        closeLabel={tt(translate, "buttons.close", "Close")}
+        closeTo={closeTo}
+        beforeClose={beforeClose}
+        className="sm:max-w-2xl"
+      >
+        <FulfillmentEditForm id={recordId} />
+      </RouteDialog>
+      {confirmation}
+    </>
+  );
+}
+
+function FulfillmentEditForm({ id }: { id?: string }) {
+  const translate = useTranslate();
+  const close = useRouteSurfaceClose();
+  const { setWarnWhen } = useWarnAboutChange();
+  const { result: record } = useShow<FulfillmentJobRecord>({ resource: "it_fulfillment_jobs", id });
+  const [values, setValues] = useState<Values | null>(null);
+  const [error, setError] = useState("");
+  const update = useUpdate<FulfillmentJobRecord, HttpError>();
+
+  const current: Values =
+    values ??
+    (record
+      ? {
+          title: record.title ?? "",
+          status: record.status ?? "",
+          priority: record.priority ?? "",
+          dueDate: record.dueDate ?? "",
+          assigneeId: record.assigneeId != null ? String(record.assigneeId) : "",
+          instructions: record.instructions ?? "",
+        }
+      : {});
+
+  const set = (k: string, v: string) => {
+    setValues({ ...current, [k]: v });
+    setWarnWhen(true);
+  };
+  const submit = (e: FormEvent) => {
+    e.preventDefault();
+    if (!record) return;
+    setError("");
+    update.mutate(
+      { resource: "it_fulfillment_jobs", id: record.id, values: normalizeJob(current) },
+      {
+        onSuccess: () => {
+          setWarnWhen(false);
+          void close({ skipBeforeClose: true });
+        },
+        onError: (err) => setError(err?.message ?? "Error"),
+      }
+    );
+  };
+  return (
+    <form onSubmit={submit} className="grid min-h-0 gap-4 overflow-y-auto p-5">
+      <FulfillmentFields values={current} set={set} showRequest={false} />
+      {error ? <p className="text-xs text-red-500">{error}</p> : null}
+      <div className="flex justify-end gap-2">
+        <Button type="button" variant="outline" onClick={() => void close()}>
+          {tt(translate, "buttons.cancel", "Cancel")}
+        </Button>
+        <Button type="submit" disabled={update.mutation.isPending}>
+          {tt(translate, "buttons.save", "Save")}
+        </Button>
+      </div>
+    </form>
   );
 }

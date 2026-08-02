@@ -1,22 +1,24 @@
 import { useShow, useTranslate } from "@refinedev/core";
-import { Eye } from "lucide-react";
+import { Eye, Pencil } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { useOutlet, useParams } from "react-router";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { LoadingState } from "@/components/app-shell/loading-state";
+import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { RouteDrawer } from "@/extensions/nocobase-route-surfaces";
 
 import { Field, ValuePill, formatDate, tt, type RunbookRecord } from "../lib";
-import { useContextualCloseTo } from "../route-surfaces";
+import { useContextualCloseTo, useOpenContextualChild } from "../route-surfaces";
 
 export function RunbookShow() {
   const translate = useTranslate();
   const { id } = useParams<{ id: string }>();
   const closeTo = useContextualCloseTo();
+  const openChild = useOpenContextualChild();
   const nested = useOutlet();
   const { result: record, query } = useShow<RunbookRecord>({
     resource: "it_runbooks",
@@ -44,6 +46,13 @@ export function RunbookShow() {
       closeLabel={tt(translate, "buttons.close", "Close")}
       closeTo={closeTo}
       nested={nested}
+      actions={
+        record ? (
+          <Button type="button" variant="outline" size="icon-sm" onClick={() => openChild("edit")}>
+            <Pencil />
+          </Button>
+        ) : null
+      }
     >
       <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5">
         {query.isLoading ? (

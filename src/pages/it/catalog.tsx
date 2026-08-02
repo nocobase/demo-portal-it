@@ -8,6 +8,8 @@ import {
   Lock,
   Monitor,
   MonitorSpeaker,
+  Pencil,
+  Plus,
   ShieldCheck,
   Smartphone,
   UserMinus,
@@ -16,7 +18,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { useMemo } from "react";
-import { useNavigate } from "react-router";
+import { Outlet, useNavigate } from "react-router";
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -28,6 +30,7 @@ import {
   tt,
   type RequestTypeRecord,
 } from "./lib";
+import { useOpenContextualChild } from "./route-surfaces";
 
 const ICONS: Record<string, LucideIcon> = {
   Laptop,
@@ -55,11 +58,12 @@ const CATEGORY_ORDER = [
 export function ServiceCatalog() {
   const translate = useTranslate();
   const navigate = useNavigate();
+  const openChild = useOpenContextualChild();
 
   const { result, query } = useList<RequestTypeRecord>({
     resource: "it_request_types",
-    filters: [{ field: "active", operator: "eq", value: true }],
     pagination: { mode: "server", currentPage: 1, pageSize: 100 },
+    sorters: [{ field: "category", order: "asc" }],
     queryOptions: { retry: false },
   });
 
@@ -93,6 +97,12 @@ export function ServiceCatalog() {
           "it.catalog.description",
           "Browse the services IT offers and raise a request in a couple of clicks."
         )}
+        actions={
+          <Button type="button" onClick={() => openChild("create")}>
+            <Plus />
+            {tt(translate, "it.catalog.create.title", "New service")}
+          </Button>
+        }
       />
 
       {query.isLoading ? (
@@ -118,15 +128,31 @@ export function ServiceCatalog() {
                   return (
                     <div
                       key={item.id}
-                      className="flex flex-col gap-3 rounded-xl border bg-card p-5"
+                      className={cn(
+                        "flex flex-col gap-3 rounded-xl border bg-card p-5",
+                        item.active === false && "opacity-60"
+                      )}
                     >
                       <div className="flex items-start justify-between gap-3">
                         <span className="flex size-10 items-center justify-center rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400 [&_svg]:size-5">
                           <Icon />
                         </span>
-                        {item.defaultPriority ? (
-                          <ValuePill translate={translate} value={item.defaultPriority} />
-                        ) : null}
+                        <div className="flex items-center gap-1.5">
+                          {item.defaultPriority ? (
+                            <ValuePill translate={translate} value={item.defaultPriority} />
+                          ) : null}
+                          {item.active === false ? (
+                            <ValuePill translate={translate} value={tt(translate, "it.catalog.draft", "Draft")} tone="slate" />
+                          ) : null}
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon-sm"
+                            onClick={() => openChild(`${item.id}/edit`)}
+                          >
+                            <Pencil />
+                          </Button>
+                        </div>
                       </div>
                       <div className="min-w-0">
                         <div className="font-medium">{item.name}</div>
@@ -178,6 +204,7 @@ export function ServiceCatalog() {
           ))}
         </div>
       )}
+      <Outlet />
     </div>
   );
 }

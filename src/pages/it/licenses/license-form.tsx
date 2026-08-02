@@ -1,4 +1,4 @@
-import { useCreate, useTranslate, useUpdate, type HttpError } from "@refinedev/core";
+import { useCreate, useList, useTranslate, useUpdate, type HttpError } from "@refinedev/core";
 import { useShow } from "@refinedev/core";
 import { useState, type FormEvent } from "react";
 import { useParams } from "react-router";
@@ -20,7 +20,7 @@ import {
 import { useRouteSurfaceClose } from "@nocobase/portal-sdk/routing";
 import { useWarnAboutChange } from "@refinedev/core";
 
-import { LICENSE_STATUSES, tt, type LicenseRecord } from "../lib";
+import { LICENSE_STATUSES, personName, tt, type LicenseRecord, type UserRef } from "../lib";
 import { useContextualCloseTo } from "../route-surfaces";
 
 const LICENSE_TYPES = [
@@ -42,6 +42,12 @@ function LicenseFields({
   set: (k: string, v: string) => void;
 }) {
   const translate = useTranslate();
+  const { result: users } = useList<UserRef>({
+    resource: "users",
+    pagination: { mode: "server", currentPage: 1, pageSize: 200 },
+    queryOptions: { retry: false },
+    errorNotification: false,
+  });
   const text = (name: string, label: string, required = false) => (
     <label className="grid gap-1 text-xs font-medium">
       <span>{label}</span>
@@ -90,6 +96,25 @@ function LicenseFields({
       </label>
       {number("annualCost", tt(translate, "it.field.annualCost", "Annual cost"))}
       <label className="grid gap-1 text-xs font-medium">
+        <span>{tt(translate, "it.field.owner", "Owner")}</span>
+        <Select value={values.ownerId ?? ""} onValueChange={(v) => set("ownerId", v ?? "")}>
+          <SelectTrigger className="h-9 w-full">
+            <SelectValue placeholder={tt(translate, "it.common.unassigned", "Unassigned")}>
+              {values.ownerId
+                ? personName(users.data.find((u) => String(u.id) === String(values.ownerId)))
+                : undefined}
+            </SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            {users.data.map((u) => (
+              <SelectItem key={u.id} value={String(u.id)}>
+                {personName(u)}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </label>
+      <label className="grid gap-1 text-xs font-medium">
         <span>{tt(translate, "it.field.status", "Status")}</span>
         <Select value={values.status ?? ""} onValueChange={(v) => set("status", v ?? "")}>
           <SelectTrigger className="h-9 w-full">
@@ -116,7 +141,8 @@ function normalize(values: Values) {
   const out: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(values)) {
     if (v === "") continue;
-    out[k] = ["seatsTotal", "seatsUsed", "annualCost"].includes(k) ? Number(v) : v;
+    if (["seatsTotal", "seatsUsed", "annualCost", "ownerId"].includes(k)) out[k] = Number(v);
+    else out[k] = v;
   }
   return out;
 }
@@ -228,6 +254,7 @@ function LicenseEditForm({ id }: { id?: string }) {
             "seatsUsed",
             "renewalDate",
             "annualCost",
+            "ownerId",
             "status",
             "notes",
           ].map((k) => [k, record[k as keyof LicenseRecord] == null ? "" : String(record[k as keyof LicenseRecord])])

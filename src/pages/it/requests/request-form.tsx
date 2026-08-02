@@ -2,13 +2,15 @@ import {
   useCreate,
   useList,
   useOne,
+  useShow,
   useTranslate,
+  useUpdate,
   useWarnAboutChange,
   type HttpError,
 } from "@refinedev/core";
 import { Sparkles } from "lucide-react";
 import { useEffect, useState, type FormEvent } from "react";
-import { useSearchParams } from "react-router";
+import { useParams, useSearchParams } from "react-router";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -473,6 +475,157 @@ function RequestCreateForm({ typeRecord }: { typeRecord?: RequestTypeRecord }) {
               {tt(translate, "it.requests.create.submit", "Submit request")}
             </Button>
           </div>
+    </form>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Edit (subject / classification / description only; workflow status  */
+/* changes stay on the show drawer's approve/reject/fulfil actions)     */
+/* ------------------------------------------------------------------ */
+
+export function RequestEdit() {
+  const translate = useTranslate();
+  const { id } = useParams<{ id: string }>();
+  const closeTo = useContextualCloseTo();
+  const { beforeClose, confirmation } = useRefineUnsavedChangesGuard();
+  const { result: record } = useShow<RequestRecord>({ resource: "it_requests", id });
+  return (
+    <>
+      <RouteDialog
+        title={tt(translate, "it.requests.edit.title", "Edit request")}
+        description={record?.subject ?? ""}
+        closeLabel={tt(translate, "buttons.close", "Close")}
+        closeTo={closeTo}
+        beforeClose={beforeClose}
+        className="sm:max-w-2xl"
+      >
+        <RequestEditForm id={id} />
+      </RouteDialog>
+      {confirmation}
+    </>
+  );
+}
+
+function RequestEditForm({ id }: { id?: string }) {
+  const translate = useTranslate();
+  const close = useRouteSurfaceClose();
+  const { setWarnWhen } = useWarnAboutChange();
+  const { result: record } = useShow<RequestRecord>({ resource: "it_requests", id });
+  const [values, setValues] = useState<Values | null>(null);
+  const [error, setError] = useState("");
+  const update = useUpdate<RequestRecord, HttpError>();
+
+  const current: Values =
+    values ??
+    (record
+      ? {
+          subject: record.subject ?? "",
+          requestType: record.requestType ?? "",
+          priority: record.priority ?? "",
+          category: record.category ?? "",
+          description: record.description ?? "",
+        }
+      : {});
+
+  const set = (k: string, v: string) => {
+    setValues({ ...current, [k]: v });
+    setWarnWhen(true);
+  };
+  const submit = (e: FormEvent) => {
+    e.preventDefault();
+    if (!record) return;
+    setError("");
+    const payload: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(current)) {
+      payload[k] = v === "" ? null : v;
+    }
+    update.mutate(
+      { resource: "it_requests", id: record.id, values: payload },
+      {
+        onSuccess: () => {
+          setWarnWhen(false);
+          void close({ skipBeforeClose: true });
+        },
+        onError: (err) => setError(err?.message ?? "Error"),
+      }
+    );
+  };
+
+  return (
+    <form onSubmit={submit} className="grid min-h-0 gap-4 overflow-y-auto p-5">
+      <div className="grid gap-3 sm:grid-cols-2">
+        <label className="grid gap-1 text-xs font-medium sm:col-span-2">
+          <span>{tt(translate, "it.field.subject", "Subject")}</span>
+          <Input value={current.subject ?? ""} onChange={(e) => set("subject", e.target.value)} required />
+        </label>
+        <label className="grid gap-1 text-xs font-medium">
+          <span>{tt(translate, "it.field.requestType", "Request type")}</span>
+          <Select value={current.requestType ?? ""} onValueChange={(v) => set("requestType", v ?? "")}>
+            <SelectTrigger className="h-9 w-full">
+              <SelectValue placeholder={tt(translate, "it.common.select", "Select...")} />
+            </SelectTrigger>
+            <SelectContent>
+              {REQUEST_TYPES.map((t) => (
+                <SelectItem key={t} value={t}>
+                  {tt(translate, `it.value.${t.toLowerCase().replace(/ /g, "_")}`, t)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </label>
+        <label className="grid gap-1 text-xs font-medium">
+          <span>{tt(translate, "it.field.priority", "Priority")}</span>
+          <Select value={current.priority ?? ""} onValueChange={(v) => set("priority", v ?? "")}>
+            <SelectTrigger className="h-9 w-full">
+              <SelectValue placeholder={tt(translate, "it.common.select", "Select...")} />
+            </SelectTrigger>
+            <SelectContent>
+              {PRIORITIES.map((p) => (
+                <SelectItem key={p} value={p}>
+                  {tt(translate, `it.value.${p.toLowerCase()}`, p)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </label>
+        <label className="grid gap-1 text-xs font-medium">
+          <span>{tt(translate, "it.field.category", "Category")}</span>
+          <Select value={current.category ?? ""} onValueChange={(v) => set("category", v ?? "")}>
+            <SelectTrigger className="h-9 w-full">
+              <SelectValue placeholder={tt(translate, "it.common.select", "Select...")} />
+            </SelectTrigger>
+            <SelectContent>
+              {CATEGORIES.map((c) => (
+                <SelectItem key={c} value={c}>
+                  {tt(
+                    translate,
+                    `it.value.${c.toLowerCase().replace(/&/g, "and").replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "")}`,
+                    c
+                  )}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </label>
+        <label className="grid gap-1 text-xs font-medium sm:col-span-2">
+          <span>{tt(translate, "it.field.description", "Description")}</span>
+          <Textarea
+            value={current.description ?? ""}
+            onChange={(e) => set("description", e.target.value)}
+            className="min-h-24"
+          />
+        </label>
+      </div>
+      {error ? <p className="text-xs text-red-500">{error}</p> : null}
+      <div className="flex justify-end gap-2">
+        <Button type="button" variant="outline" onClick={() => void close()}>
+          {tt(translate, "buttons.cancel", "Cancel")}
+        </Button>
+        <Button type="submit" disabled={update.mutation.isPending}>
+          {tt(translate, "buttons.save", "Save")}
+        </Button>
+      </div>
     </form>
   );
 }

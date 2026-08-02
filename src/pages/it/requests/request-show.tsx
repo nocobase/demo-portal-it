@@ -18,6 +18,8 @@ import {
 import { useState } from "react";
 import { useOutlet, useParams } from "react-router";
 
+import { Pencil } from "lucide-react";
+
 import { LoadingState } from "@/components/app-shell/loading-state";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -44,12 +46,13 @@ import {
   type RequestRecord,
   type UserRef,
 } from "../lib";
-import { useContextualCloseTo } from "../route-surfaces";
+import { useContextualCloseTo, useOpenContextualChild } from "../route-surfaces";
 
 export function RequestShow() {
   const translate = useTranslate();
   const { id } = useParams<{ id: string }>();
   const closeTo = useContextualCloseTo();
+  const openChild = useOpenContextualChild();
   const nested = useOutlet();
   const invalidate = useInvalidate();
 
@@ -178,6 +181,13 @@ export function RequestShow() {
       closeLabel={tt(translate, "buttons.close", "Close")}
       closeTo={closeTo}
       nested={nested}
+      actions={
+        record ? (
+          <Button type="button" variant="outline" size="icon-sm" onClick={() => openChild("edit")}>
+            <Pencil />
+          </Button>
+        ) : null
+      }
     >
       <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5">
         {query.isLoading ? (
@@ -445,18 +455,21 @@ export function RequestShow() {
               ) : (
                 <ul className="space-y-2">
                   {jobs.data.map((job) => (
-                    <li
-                      key={job.id}
-                      className="rounded-lg border bg-card px-3 py-2"
-                    >
-                      <div className="flex items-baseline justify-between gap-2">
-                        <span className="text-sm font-medium">{job.title}</span>
-                        <ValuePill translate={translate} value={job.status} className="h-5" />
-                      </div>
-                      <div className="mt-0.5 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                        <span>{personName(job.assignee)}</span>
-                        {job.dueDate ? <span>· {formatDate(job.dueDate)}</span> : null}
-                      </div>
+                    <li key={job.id}>
+                      <button
+                        type="button"
+                        onClick={() => openChild(`jobs/${job.id}`)}
+                        className="w-full rounded-lg border bg-card px-3 py-2 text-left transition-colors hover:bg-accent/40"
+                      >
+                        <div className="flex items-baseline justify-between gap-2">
+                          <span className="text-sm font-medium">{job.title}</span>
+                          <ValuePill translate={translate} value={job.status} className="h-5" />
+                        </div>
+                        <div className="mt-0.5 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                          <span>{personName(job.assignee)}</span>
+                          {job.dueDate ? <span>· {formatDate(job.dueDate)}</span> : null}
+                        </div>
+                      </button>
                     </li>
                   ))}
                 </ul>
