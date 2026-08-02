@@ -434,7 +434,15 @@ function RequestCreateForm({ typeRecord }: { typeRecord?: RequestTypeRecord }) {
                 onValueChange={(v) => set("requesterId", v ?? "")}
               >
                 <SelectTrigger className="h-9 w-full">
-                  <SelectValue placeholder={tt(translate, "it.common.select", "Select...")} />
+                  <SelectValue placeholder={tt(translate, "it.common.select", "Select...")}>
+                    {values.requesterId
+                      ? personName(
+                          users.data.find(
+                            (u) => String(u.id) === String(values.requesterId)
+                          )
+                        )
+                      : undefined}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   {users.data.map((u) => (

@@ -327,7 +327,15 @@ export function RequestShow() {
                 <SelectTrigger className="h-9 flex-1">
                   <SelectValue
                     placeholder={tt(translate, "it.common.unassigned", "Unassigned")}
-                  />
+                  >
+                    {record.assigneeId
+                      ? personName(
+                          users.data.find(
+                            (u) => String(u.id) === String(record.assigneeId)
+                          ) ?? record.assignee
+                        )
+                      : undefined}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   {users.data.map((u) => (

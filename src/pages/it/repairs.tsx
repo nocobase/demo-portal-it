@@ -245,7 +245,18 @@ function RepairFields({
           onValueChange={(v) => set("assetId", v ?? "")}
         >
           <SelectTrigger className="h-9 w-full">
-            <SelectValue placeholder={tt(translate, "it.common.select", "Select...")} />
+            <SelectValue placeholder={tt(translate, "it.common.select", "Select...")}>
+              {values.assetId
+                ? (() => {
+                    const a = (assets?.data ?? []).find(
+                      (asset) => String(asset.id) === String(values.assetId)
+                    );
+                    return a
+                      ? `${a.name}${a.assetTag ? ` (${a.assetTag})` : ""}`
+                      : undefined;
+                  })()
+                : undefined}
+            </SelectValue>
           </SelectTrigger>
           <SelectContent>
             {(assets?.data ?? []).map((asset) => (
