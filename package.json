@@ -3,7 +3,6 @@
   "displayName": "IT Operations DEMO",
   "version": "1.0.0",
   "private": true,
-  "packageManager": "pnpm@10.28.0",
   "type": "module",
   "nocobase": {
     "defaultTemplateVersion": "3.0.1"
