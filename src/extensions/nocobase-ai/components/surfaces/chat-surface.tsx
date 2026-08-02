@@ -3,6 +3,7 @@ import { cn } from "@/lib/utils";
 import { Dialog as DialogPrimitive } from "@base-ui/react/dialog";
 import { PanelLeftClose, PanelRightClose } from "lucide-react";
 import type { CSSProperties, PropsWithChildren } from "react";
+import { useAITranslate } from "../../locales/use-ai-translate";
 
 export type ChatSurfaceVariant = "side-panel" | "dialog";
 
@@ -26,6 +27,7 @@ export function ChatSurface({
   showCloseHandle = false,
   children,
 }: ChatSurfaceProps) {
+  const t = useAITranslate();
   const expanded = variant === "dialog";
   const panelWidth = typeof width === "number" ? `${width}px` : width;
 
@@ -75,12 +77,18 @@ export function ChatSurface({
           }
         >
           <DialogPrimitive.Title className="sr-only">
-            NocoBase AI employee
+            {t("surface.title", "NocoBase AI employee")}
           </DialogPrimitive.Title>
           <DialogPrimitive.Description className="sr-only">
             {expanded
-              ? "Expanded AI conversation window."
-              : "AI conversation side panel."}
+              ? t(
+                  "surface.dialogDescription",
+                  "Expanded AI conversation window."
+                )
+              : t(
+                  "surface.panelDescription",
+                  "AI conversation side panel."
+                )}
           </DialogPrimitive.Description>
           {showCloseHandle && !expanded ? (
             <Button
@@ -92,7 +100,7 @@ export function ChatSurface({
                   ? "left-0 -translate-x-1/2"
                   : "right-0 translate-x-1/2"
               )}
-              aria-label="Close side panel"
+              aria-label={t("surface.closePanel", "Close side panel")}
               onClick={() => onOpenChange(false)}
             >
               {side === "right" ? <PanelRightClose /> : <PanelLeftClose />}

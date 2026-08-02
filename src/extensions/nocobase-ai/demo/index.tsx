@@ -23,6 +23,7 @@ import { ContainerShowcase, type ChatContainer } from "./container-showcase";
 import { InteractionShowcase } from "./interaction-showcase";
 import { AIConfigurationGate } from "./configuration-gate";
 import { PromptGenerator } from "./prompt-generator";
+import { useAITranslate } from "../locales/use-ai-translate";
 
 const propRows = [
   [
@@ -156,6 +157,7 @@ export function AIChatPage() {
 }
 
 function AIChatPageContent() {
+  const t = useAITranslate();
   const [container, setContainer] = useState<ChatContainer>("embedded");
   const [surfaceOpen, setSurfaceOpen] = useState(false);
   const [webSearch, setWebSearch] = useState(false);
@@ -166,7 +168,7 @@ function AIChatPageContent() {
     () => [
       {
         key: "pick-page-element",
-        label: "Pick page element",
+        label: t("actions.pickPageElement", "Pick page element"),
         icon: <MousePointer2 />,
         disabled: registeredCount === 0,
         onClick: () => {
@@ -184,7 +186,7 @@ function AIChatPageContent() {
       },
       {
         key: "web-search",
-        label: "Web search",
+        label: t("actions.webSearch", "Web search"),
         icon: <Globe2 />,
         active: webSearch,
         onClick: () => {
@@ -200,6 +202,7 @@ function AIChatPageContent() {
       registeredCount,
       startPicking,
       surfaceOpen,
+      t,
       webSearch,
     ]
   );
@@ -253,17 +256,21 @@ function AIChatPageContent() {
         <section className="flex flex-wrap items-start justify-between gap-5 border-b pb-8">
           <div>
             <div className="flex items-center gap-2">
-              <Badge variant="secondary">AI Components</Badge>
-              <Badge variant="outline">Preview</Badge>
+              <Badge variant="secondary">
+                {t("demo.badge.components", "AI Components")}
+              </Badge>
+              <Badge variant="outline">
+                {t("demo.badge.preview", "Preview")}
+              </Badge>
             </div>
             <h1 className="mt-4 text-3xl font-semibold tracking-[-0.035em]">
-              AI Chat Window
+              {t("demo.chat.title", "AI Chat Window")}
             </h1>
             <p className="mt-3 max-w-3xl text-sm leading-6 text-muted-foreground">
-              A position-independent NocoBase AI employee conversation
-              component. Explore message interactions independently, place the
-              same chat in different containers, then generate an implementation
-              prompt for a target page.
+              {t(
+                "demo.chat.description",
+                "A position-independent NocoBase AI employee conversation component. Explore message interactions independently, place the same chat in different containers, then generate an implementation prompt for a target page."
+              )}
             </p>
           </div>
         </section>

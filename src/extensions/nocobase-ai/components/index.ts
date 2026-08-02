@@ -1,3 +1,5 @@
+import "../locales";
+
 export {
   NocoBaseAIRootProvider,
   type NocoBaseAIRootProviderProps,

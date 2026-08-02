@@ -6,15 +6,17 @@ import { AIEmployeeAvatar } from "../chat/ai-employee-avatar";
 import { getNocoBaseToolCallMetadata } from "../chat/tool-call-card";
 import type { AIToolRendererProps } from "./tool-renderer-provider";
 import { asRecord, asString } from "./tool-renderer-utils";
+import { useAITranslate } from "../../locales/use-ai-translate";
 
 export function SubAgentRenderer({ part }: AIToolRendererProps) {
+  const t = useAITranslate();
   const { employees } = useAI();
   const input = asRecord(part.input);
   const username = asString(input.username);
   const employee = employees.find((item) => item.username === username);
   const fallbackName = username
     ? `${username.charAt(0).toUpperCase()}${username.slice(1)}`
-    : "AI employee";
+    : t("chat.aiEmployee", "AI employee");
   const [expanded, setExpanded] = useState(false);
   const question = asString(input.question);
   const metadata = getNocoBaseToolCallMetadata(part);
@@ -42,7 +44,8 @@ export function SubAgentRenderer({ part }: AIToolRendererProps) {
             @{employee?.nickname || fallbackName}
           </div>
           <div className="truncate text-xs text-muted-foreground">
-            {employee?.position || "Working on a delegated task"}
+            {employee?.position ||
+              t("tool.subAgent.working", "Working on a delegated task")}
           </div>
         </div>
         {question ? (

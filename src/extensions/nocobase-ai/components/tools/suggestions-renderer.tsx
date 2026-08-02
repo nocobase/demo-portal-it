@@ -4,12 +4,14 @@ import { useState } from "react";
 import { getNocoBaseToolCallMetadata } from "../chat/tool-call-card";
 import type { AIToolRendererProps } from "./tool-renderer-provider";
 import { asRecord, parseArray } from "./tool-renderer-utils";
+import { useAITranslate } from "../../locales/use-ai-translate";
 
 export function SuggestionsRenderer({
   part,
   disabled,
   onEdit,
 }: AIToolRendererProps) {
+  const t = useAITranslate();
   const input = asRecord(part.input);
   const metadata = getNocoBaseToolCallMetadata(part);
   const options = parseArray(input.options).filter(
@@ -25,7 +27,9 @@ export function SuggestionsRenderer({
 
   if (!options.length) {
     return (
-      <p className="text-xs text-muted-foreground">Generating suggestions…</p>
+      <p className="text-xs text-muted-foreground">
+        {t("tool.suggestions.generating", "Generating suggestions…")}
+      </p>
     );
   }
 

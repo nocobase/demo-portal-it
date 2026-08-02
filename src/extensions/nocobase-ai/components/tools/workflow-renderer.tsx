@@ -5,6 +5,7 @@ import { MarkdownMessage } from "../chat/markdown-message";
 import { getNocoBaseToolCallMetadata } from "../chat/tool-call-card";
 import type { AIToolRendererProps } from "./tool-renderer-provider";
 import { asRecord, asString } from "./tool-renderer-utils";
+import { useAITranslate } from "../../locales/use-ai-translate";
 
 export function WorkflowRenderer({
   part,
@@ -13,6 +14,7 @@ export function WorkflowRenderer({
   onReject,
   onRevise,
 }: AIToolRendererProps) {
+  const t = useAITranslate();
   const input = asRecord(part.input);
   const metadata = getNocoBaseToolCallMetadata(part);
   const entries = Object.entries(asRecord(input.result));
@@ -41,7 +43,8 @@ export function WorkflowRenderer({
     <div className="rounded-lg border bg-background p-3">
       <div className="flex items-center gap-2 text-sm font-medium">
         <GitBranch className="size-4" />
-        {asString(input.workflowTitle) || "Workflow task"}
+        {asString(input.workflowTitle) ||
+          t("tool.workflow.title", "Workflow task")}
       </div>
       <div className="mt-3 grid gap-2 sm:grid-cols-2">
         {entries.map(([key, value]) => (
@@ -65,7 +68,8 @@ export function WorkflowRenderer({
       </div>
       {!entries.length ? (
         <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
-          <CheckCircle2 className="size-3.5" /> Ready for review
+          <CheckCircle2 className="size-3.5" />
+          {t("tool.workflow.ready", "Ready for review")}
         </div>
       ) : null}
       <div className="mt-3 flex flex-wrap justify-end gap-2 border-t pt-3">
@@ -81,7 +85,9 @@ export function WorkflowRenderer({
             )
           }
         >
-          {action === "reject" ? "Rejecting…" : "Reject"}
+          {action === "reject"
+            ? t("tool.workflow.rejecting", "Rejecting…")
+            : t("tool.workflow.reject", "Reject")}
         </Button>
         <Button
           variant="outline"
@@ -93,14 +99,16 @@ export function WorkflowRenderer({
             setAction(undefined);
           }}
         >
-          Revise
+          {t("tool.workflow.revise", "Revise")}
         </Button>
         <Button
           size="sm"
           disabled={actionDisabled}
           onClick={() => void runAction("approve", onApprove)}
         >
-          {action === "approve" ? "Approving…" : "Approve"}
+          {action === "approve"
+            ? t("tool.workflow.approving", "Approving…")
+            : t("tool.workflow.approve", "Approve")}
         </Button>
       </div>
     </div>

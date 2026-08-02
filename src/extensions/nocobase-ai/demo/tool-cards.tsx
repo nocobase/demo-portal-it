@@ -16,6 +16,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { useState } from "react";
+import { useAITranslate } from "../locales/use-ai-translate";
 
 const tools = {
   suggestions: {
@@ -199,6 +200,7 @@ const specializedCards = [
 ] as const;
 
 export function ToolCardsPage() {
+  const t = useAITranslate();
   const [decision, setDecision] = useState("Waiting for a decision");
   const [workflowDecision, setWorkflowDecision] = useState(
     "Waiting for workflow review"
@@ -209,16 +211,21 @@ export function ToolCardsPage() {
       <section className="flex flex-wrap items-start justify-between gap-5 border-b pb-8">
         <div>
           <div className="flex items-center gap-2">
-            <Badge variant="secondary">AI Components</Badge>
-            <Badge variant="outline">Tool renderers</Badge>
+            <Badge variant="secondary">
+              {t("demo.badge.components", "AI Components")}
+            </Badge>
+            <Badge variant="outline">
+              {t("demo.badge.toolRenderers", "Tool renderers")}
+            </Badge>
           </div>
           <h1 className="mt-4 text-3xl font-semibold tracking-[-0.035em]">
-            Tool Cards
+            {t("demo.tools.title", "Tool Cards")}
           </h1>
           <p className="mt-3 max-w-3xl text-sm leading-6 text-muted-foreground">
-            Specialized tools render their complete business interaction. Tools
-            without a registered renderer fall back to the shared status,
-            approval, error, and input disclosure card.
+            {t(
+              "demo.tools.description",
+              "Specialized tools render their complete business interaction. Tools without a registered renderer fall back to the shared status, approval, error, and input disclosure card."
+            )}
           </p>
         </div>
       </section>

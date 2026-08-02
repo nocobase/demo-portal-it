@@ -26,6 +26,7 @@ import {
 } from "./providers";
 import { nocobaseAIService } from "./services";
 import { Globe2, MousePointer2 } from "lucide-react";
+import { useAITranslate } from "./locales/use-ai-translate";
 
 const DEFAULT_SIDE_PANEL_WIDTH = 450;
 export function NocoBaseAIExtensionProvider({
@@ -99,6 +100,7 @@ function StarterGlobalAIChat({
   expanded: boolean;
   setExpanded: Dispatch<SetStateAction<boolean>>;
 }) {
+  const t = useAITranslate();
   const {
     id: chatId,
     conversations,
@@ -120,7 +122,7 @@ function StarterGlobalAIChat({
     () => [
       {
         key: "pick-page-element",
-        label: "Pick page element",
+        label: t("actions.pickPageElement", "Pick page element"),
         icon: <MousePointer2 />,
         disabled: registeredCount === 0,
         onClick: () => {
@@ -138,9 +140,12 @@ function StarterGlobalAIChat({
         key: "web-search",
         label: supportsWebSearch
           ? webSearch
-            ? "Disable web search"
-            : "Enable web search"
-          : "Web search is not supported by this model",
+            ? t("actions.disableWebSearch", "Disable web search")
+            : t("actions.enableWebSearch", "Enable web search")
+          : t(
+              "actions.webSearchUnsupported",
+              "Web search is not supported by this model"
+            ),
         icon: <Globe2 />,
         active: webSearch,
         disabled: !supportsWebSearch,
@@ -158,6 +163,7 @@ function StarterGlobalAIChat({
       startPicking,
       supportsWebSearch,
       webSearch,
+      t,
     ]
   );
   const closeChat = () => {

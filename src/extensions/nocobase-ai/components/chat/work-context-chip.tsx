@@ -10,9 +10,10 @@ import { cn } from "@/lib/utils";
 import { MousePointer2, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import type { AIWorkContextItem } from "../../providers";
+import { useAITranslate } from "../../locales/use-ai-translate";
 
-const formatContextContent = (content: unknown) => {
-  if (content === undefined) return "No context payload";
+const formatContextContent = (content: unknown, emptyText: string) => {
+  if (content === undefined) return emptyText;
   if (typeof content === "string") return content;
   try {
     return JSON.stringify(content, null, 2);
@@ -30,12 +31,17 @@ export function WorkContextChip({
   onRemove?: () => void;
   className?: string;
 }) {
+  const t = useAITranslate();
   const [open, setOpen] = useState(false);
-  const title = item.title ?? "Page element";
+  const title = item.title ?? t("chat.context.defaultTitle", "Page element");
   const kind = typeof item.kind === "string" ? item.kind : undefined;
   const content = useMemo(
-    () => formatContextContent(item.content),
-    [item.content]
+    () =>
+      formatContextContent(
+        item.content,
+        t("chat.context.empty", "No context payload")
+      ),
+    [item.content, t]
   );
 
   return (
@@ -49,7 +55,9 @@ export function WorkContextChip({
         <button
           type="button"
           className="flex min-w-0 items-center gap-1.5 rounded-l-md px-2 py-1 text-left hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          aria-label={`View context: ${title}`}
+          aria-label={t("chat.context.view", "View context: {{title}}", {
+            title,
+          })}
           onClick={() => setOpen(true)}
         >
           <MousePointer2 className="size-3.5 shrink-0" />
@@ -59,7 +67,9 @@ export function WorkContextChip({
           <button
             type="button"
             className="mr-1 rounded-sm p-0.5 hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            aria-label={`Remove ${title}`}
+            aria-label={t("chat.context.remove", "Remove {{title}}", {
+              title,
+            })}
             onClick={onRemove}
           >
             <X className="size-3" />
@@ -72,18 +82,20 @@ export function WorkContextChip({
           <DialogHeader className="pr-8">
             <DialogTitle>{title}</DialogTitle>
             <DialogDescription>
-              This is the page context included with the message sent to the AI
-              employee.
+              {t(
+                "chat.context.description",
+                "This is the page context included with the message sent to the AI employee."
+              )}
             </DialogDescription>
           </DialogHeader>
 
           <div className="flex flex-wrap gap-2 text-xs">
             <span className="rounded-md border bg-muted/40 px-2 py-1">
-              Type: {item.type}
+              {t("chat.context.type", "Type: {{type}}", { type: item.type })}
             </span>
             {kind ? (
               <span className="rounded-md border bg-muted/40 px-2 py-1">
-                Kind: {kind}
+                {t("chat.context.kind", "Kind: {{kind}}", { kind })}
               </span>
             ) : null}
             {item.id ? (
@@ -95,7 +107,7 @@ export function WorkContextChip({
 
           <div className="space-y-2">
             <div className="text-xs font-medium text-muted-foreground">
-              Context payload
+              {t("chat.context.payload", "Context payload")}
             </div>
             <pre className="max-h-[55vh] overflow-auto rounded-lg border bg-muted/30 p-3 text-xs leading-5 whitespace-pre-wrap break-words">
               {content}
@@ -104,7 +116,7 @@ export function WorkContextChip({
 
           <div className="flex justify-end">
             <Button variant="outline" onClick={() => setOpen(false)}>
-              Close
+              {t("actions.close", "Close")}
             </Button>
           </div>
         </DialogContent>

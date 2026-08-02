@@ -34,6 +34,7 @@ import { useForm } from "react-hook-form";
 import { AIConfigurationGate } from "./configuration-gate";
 import { PageContextPromptGenerator } from "./page-context-prompt-generator";
 import { PageElementShowcase } from "./page-element-showcase";
+import { useAITranslate } from "../locales/use-ai-translate";
 
 const isBusinessEmployee = (employee: { username: string }) =>
   !["nathan", "dara"].includes(employee.username.toLowerCase());
@@ -47,21 +48,27 @@ export function PageContextPage() {
 }
 
 function PageContextPageContent() {
+  const t = useAITranslate();
   return (
     <div className="space-y-12 pb-12">
       <section className="flex flex-wrap items-start justify-between gap-5 border-b pb-8">
         <div>
           <div className="flex items-center gap-2">
-            <Badge variant="secondary">AI Components</Badge>
-            <Badge variant="outline">Conversation context</Badge>
+            <Badge variant="secondary">
+              {t("demo.badge.components", "AI Components")}
+            </Badge>
+            <Badge variant="outline">
+              {t("demo.badge.pageContext", "Conversation context")}
+            </Badge>
           </div>
           <h1 className="mt-4 text-3xl font-semibold tracking-[-0.035em]">
-            Page context and frontend tools
+            {t("demo.context.title", "Page context and frontend tools")}
           </h1>
           <p className="mt-3 max-w-3xl text-sm leading-6 text-muted-foreground">
-            Connect AI employees to live React page state. Start with manual
-            context selection, configure task context, then expose fixed or
-            custom frontend capabilities that can safely update the page.
+            {t(
+              "demo.context.description",
+              "Connect AI employees to live React page state. Start with manual context selection, configure task context, then expose fixed or custom frontend capabilities that can safely update the page."
+            )}
           </p>
         </div>
       </section>

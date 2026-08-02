@@ -29,6 +29,7 @@ import {
   splitBusinessReportMarkdown,
   type BusinessReportData,
 } from "./business-report-utils";
+import { useAITranslate } from "../../locales/use-ai-translate";
 
 type BusinessReportDialogSnapshot = {
   open: boolean;
@@ -133,6 +134,7 @@ function BusinessReportDialogHost({
   state: BusinessReportDialogSnapshot;
   onOpenChange: (open: boolean) => void;
 }) {
+  const t = useAITranslate();
   const report = state.report;
   const [activeTab, setActiveTab] = useState("preview");
   const [htmlPreview, setHtmlPreview] = useState("");
@@ -188,7 +190,12 @@ function BusinessReportDialogHost({
       .catch((error: unknown) => {
         if (active) {
           setExportError(
-            error instanceof Error ? error.message : "Unable to build HTML"
+            error instanceof Error
+              ? error.message
+              : t(
+                  "tool.businessReport.buildHtmlError",
+                  "Unable to build HTML"
+                )
           );
         }
       })
@@ -206,11 +213,16 @@ function BusinessReportDialogHost({
     reportSignature,
     state.open,
     state.ready,
+    t,
   ]);
 
   if (!report) return null;
   const summary =
-    report.summary || "Open the report to review the generated analysis.";
+    report.summary ||
+    t(
+      "tool.businessReport.openHint",
+      "Open the report to review the generated analysis."
+    );
   const fileName = getBusinessReportFileName(report);
 
   return (
@@ -226,7 +238,9 @@ function BusinessReportDialogHost({
           className="min-h-0 overflow-hidden px-5 py-4"
         >
           <TabsList>
-            <TabsTrigger value="preview">Preview</TabsTrigger>
+            <TabsTrigger value="preview">
+              {t("tool.businessReport.preview", "Preview")}
+            </TabsTrigger>
             <TabsTrigger value="markdown">Markdown</TabsTrigger>
             <TabsTrigger value="html">HTML</TabsTrigger>
           </TabsList>
@@ -264,7 +278,11 @@ function BusinessReportDialogHost({
           >
             {htmlPreview ? (
               <iframe
-                title={`${report.title} HTML preview`}
+                title={t(
+                  "tool.businessReport.htmlPreview",
+                  "{{title}} HTML preview",
+                  { title: report.title }
+                )}
                 srcDoc={htmlPreview}
                 className="size-full min-h-[480px] border-0 bg-white"
               />
@@ -272,7 +290,10 @@ function BusinessReportDialogHost({
               <LoadingState className="h-full min-h-[480px]" />
             ) : (
               <div className="flex h-full min-h-[480px] items-center justify-center gap-2 text-sm text-muted-foreground">
-                HTML is unavailable
+                {t(
+                  "tool.businessReport.htmlUnavailable",
+                  "HTML is unavailable"
+                )}
               </div>
             )}
           </TabsContent>
@@ -292,7 +313,11 @@ function BusinessReportDialogHost({
               )
             }
           >
-            <Download /> Download Markdown
+            <Download />
+            {t(
+              "tool.businessReport.downloadMarkdown",
+              "Download Markdown"
+            )}
           </Button>
           <Button
             variant="outline"
@@ -313,7 +338,10 @@ function BusinessReportDialogHost({
                 setExportError(
                   error instanceof Error
                     ? error.message
-                    : "Unable to export HTML"
+                    : t(
+                        "tool.businessReport.exportHtmlError",
+                        "Unable to export HTML"
+                      )
                 );
               } finally {
                 setExporting(undefined);
@@ -325,7 +353,7 @@ function BusinessReportDialogHost({
             ) : (
               <FileCode2 />
             )}
-            Download HTML
+            {t("tool.businessReport.downloadHtml", "Download HTML")}
           </Button>
           <Button
             disabled={!report.markdown || exporting !== undefined}
@@ -336,14 +364,20 @@ function BusinessReportDialogHost({
                 const opened = await printBusinessReport(report);
                 if (!opened) {
                   setExportError(
-                    "Popup blocked. Allow popups and try printing again."
+                    t(
+                      "tool.businessReport.popupBlocked",
+                      "Popup blocked. Allow popups and try printing again."
+                    )
                   );
                 }
               } catch (error) {
                 setExportError(
                   error instanceof Error
                     ? error.message
-                    : "Unable to print report"
+                    : t(
+                        "tool.businessReport.printError",
+                        "Unable to print report"
+                      )
                 );
               } finally {
                 setExporting(undefined);
@@ -355,7 +389,7 @@ function BusinessReportDialogHost({
             ) : (
               <Printer />
             )}
-            Print PDF
+            {t("tool.businessReport.printPdf", "Print PDF")}
           </Button>
         </div>
       </DialogContent>

@@ -18,6 +18,7 @@ import {
 } from "react";
 import { ChatEmptyState } from "./chat-empty-state";
 import { ChatMessage } from "./chat-message";
+import { useAITranslate } from "../../locales/use-ai-translate";
 
 export function ChatMessages({
   onToolCallDecision,
@@ -86,6 +87,7 @@ export function AIChatMessageList({
   startEditingMessage,
   focusComposer,
 }: AIChatMessageListProps) {
+  const t = useAITranslate();
   const viewportRef = useRef<HTMLDivElement>(null);
   const bottomOffsetRef = useRef(0);
   const [atBottom, setAtBottom] = useState(true);
@@ -202,7 +204,7 @@ export function AIChatMessageList({
           size="icon-sm"
           variant="outline"
           className="absolute bottom-3 left-1/2 z-10 -translate-x-1/2 rounded-full bg-background shadow-sm"
-          aria-label="Scroll to bottom"
+          aria-label={t("chat.scrollToBottom", "Scroll to bottom")}
           onClick={() => scrollToBottom()}
         >
           <ArrowDown />

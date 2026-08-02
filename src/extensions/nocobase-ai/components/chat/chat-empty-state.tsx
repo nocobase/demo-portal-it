@@ -2,8 +2,10 @@ import { Button } from "@/components/ui/button";
 import { useAIChatBase } from "../../providers";
 import { ArrowUpRight, Send, TextCursorInput } from "lucide-react";
 import { AIEmployeeAvatar } from "./ai-employee-avatar";
+import { useAITranslate } from "../../locales/use-ai-translate";
 
 export function ChatEmptyState() {
+  const t = useAITranslate();
   const { currentEmployee, availableTasks, runTask } = useAIChatBase();
 
   return (
@@ -15,7 +17,11 @@ export function ChatEmptyState() {
         />
         <p className="mx-auto mt-4 max-w-xs text-sm leading-6 text-muted-foreground">
           {currentEmployee.greeting ??
-            `Hi, I’m ${currentEmployee.nickname}. How can I help?`}
+            t(
+              "chat.defaultGreeting",
+              "Hi, I’m {{name}}. How can I help?",
+              { name: currentEmployee.nickname }
+            )}
         </p>
         {availableTasks.length ? (
           <div className="mt-6 grid gap-2 text-left">
@@ -31,12 +37,19 @@ export function ChatEmptyState() {
                   <Icon className="size-4 text-muted-foreground" />
                   <span className="min-w-0 flex-1">
                     <span className="block">
-                      {task.title ?? task.message?.user ?? `Task ${index + 1}`}
+                      {task.title ??
+                        task.message?.user ??
+                        t("chat.task.fallback", "Task {{number}}", {
+                          number: index + 1,
+                        })}
                     </span>
                     <span className="mt-0.5 block text-[11px] text-muted-foreground">
                       {task.autoSend
-                        ? "Send automatically"
-                        : "Fill the composer before sending"}
+                        ? t("chat.task.automatic", "Send automatically")
+                        : t(
+                            "chat.task.fillComposer",
+                            "Fill the composer before sending"
+                          )}
                     </span>
                   </span>
                   <ArrowUpRight className="size-3.5 text-muted-foreground" />

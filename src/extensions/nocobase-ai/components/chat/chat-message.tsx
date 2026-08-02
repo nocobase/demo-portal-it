@@ -16,6 +16,7 @@ import { ChatAttachment } from "./chat-attachment";
 import { useAIToolRenderer } from "../tools/tool-renderer-provider";
 import { SubAgentConversation } from "./sub-agent-conversation";
 import { WorkContextChip } from "./work-context-chip";
+import { useAITranslate } from "../../locales/use-ai-translate";
 
 type ChatMessageProps = {
   message: AIChatMessageType;
@@ -38,6 +39,7 @@ function ChatMessageComponent({
   startEditingMessage,
   focusComposer,
 }: ChatMessageProps) {
+  const t = useAITranslate();
   const interactionPending = status === "streaming" || status === "submitted";
   const [copied, setCopied] = useState(false);
   const isUser = message.role === "user";
@@ -97,7 +99,7 @@ function ChatMessageComponent({
             <Button
               variant="ghost"
               size="icon-xs"
-              aria-label="Edit message"
+              aria-label={t("chat.message.edit", "Edit message")}
               disabled={interactionPending || !startEditingMessage}
               onClick={() => void startEditingMessage?.(message)}
             >
@@ -107,7 +109,7 @@ function ChatMessageComponent({
               <Button
                 variant="ghost"
                 size="icon-xs"
-                aria-label="Copy message"
+                aria-label={t("chat.message.copy", "Copy message")}
                 onClick={async () => {
                   await navigator.clipboard.writeText(text);
                   setCopied(true);
@@ -129,7 +131,7 @@ function ChatMessageComponent({
         <Button
           variant="ghost"
           size="icon-xs"
-          aria-label="Copy response"
+          aria-label={t("chat.message.copyResponse", "Copy response")}
           onClick={async () => {
             await navigator.clipboard.writeText(text);
             setCopied(true);
@@ -142,7 +144,7 @@ function ChatMessageComponent({
       <Button
         variant="ghost"
         size="icon-xs"
-        aria-label="Retry response"
+        aria-label={t("chat.message.retry", "Retry response")}
         disabled={interactionPending || !retryMessage}
         onClick={() => void retryMessage?.(message)}
       >
@@ -222,7 +224,7 @@ function ChatMessageComponent({
           <div className="min-h-6 text-sm leading-6 text-foreground">
             <span
               className="inline-flex gap-1 py-2"
-              aria-label="Generating response"
+              aria-label={t("chat.message.generating", "Generating response")}
             >
               <span className="size-1.5 animate-pulse rounded-full bg-muted-foreground/70" />
               <span className="size-1.5 animate-pulse rounded-full bg-muted-foreground/70 [animation-delay:120ms]" />

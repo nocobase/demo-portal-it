@@ -16,8 +16,10 @@ import {
 import { MessageSquareText } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useAIChatBase } from "../../providers";
+import { useAITranslate } from "../../locales/use-ai-translate";
 
 export function UserPromptEditor() {
+  const t = useAITranslate();
   const { currentEmployee, saveUserPrompt } = useAIChatBase();
   const [open, setOpen] = useState(false);
   const [prompt, setPrompt] = useState("");
@@ -38,7 +40,9 @@ export function UserPromptEditor() {
       setOpen(false);
     } catch (saveError) {
       setError(
-        saveError instanceof Error ? saveError.message : "Unable to save prompt"
+        saveError instanceof Error
+          ? saveError.message
+          : t("chat.prompt.saveError", "Unable to save prompt")
       );
     } finally {
       setSaving(false);
@@ -55,7 +59,7 @@ export function UserPromptEditor() {
                 <Button
                   variant="ghost"
                   size="icon-sm"
-                  aria-label="Personalized prompt"
+                  aria-label={t("chat.prompt.title", "Personalized prompt")}
                 />
               }
             />
@@ -63,7 +67,9 @@ export function UserPromptEditor() {
         >
           <MessageSquareText />
         </TooltipTrigger>
-        <TooltipContent>Personalized prompt</TooltipContent>
+        <TooltipContent>
+          {t("chat.prompt.title", "Personalized prompt")}
+        </TooltipContent>
       </Tooltip>
       <PopoverContent
         align="end"
@@ -71,10 +77,14 @@ export function UserPromptEditor() {
         className="w-[380px] gap-3 p-4"
       >
         <PopoverHeader>
-          <PopoverTitle>Personalized prompt</PopoverTitle>
+          <PopoverTitle>
+            {t("chat.prompt.title", "Personalized prompt")}
+          </PopoverTitle>
           <PopoverDescription>
-            Add instructions that this AI employee should follow when working
-            with you.
+            {t(
+              "chat.prompt.description",
+              "Add instructions that this AI employee should follow when working with you."
+            )}
           </PopoverDescription>
         </PopoverHeader>
         <Textarea
@@ -82,15 +92,20 @@ export function UserPromptEditor() {
           onChange={(event) => setPrompt(event.target.value)}
           rows={5}
           className="max-h-52 min-h-28 resize-y"
-          placeholder="For example: Keep answers concise and ask before changing data."
+          placeholder={t(
+            "chat.prompt.placeholder",
+            "For example: Keep answers concise and ask before changing data."
+          )}
         />
         {error ? <p className="text-xs text-destructive">{error}</p> : null}
         <div className="flex justify-end gap-2">
           <Button variant="outline" size="sm" onClick={() => setOpen(false)}>
-            Cancel
+            {t("actions.cancel", "Cancel")}
           </Button>
           <Button size="sm" disabled={saving} onClick={() => void save()}>
-            {saving ? "Saving…" : "Save"}
+            {saving
+              ? t("actions.saving", "Saving…")
+              : t("actions.save", "Save")}
           </Button>
         </div>
       </PopoverContent>

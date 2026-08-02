@@ -14,6 +14,7 @@ import {
 import { PromptCard } from "./prompt-card";
 import { AIConfigurationGate } from "./configuration-gate";
 import { useState, type CSSProperties } from "react";
+import { useAITranslate } from "../locales/use-ai-translate";
 
 const floatingPrompt = `Add the standard NocoBase AI floating chat entry to the application layout.
 
@@ -40,6 +41,7 @@ export function FloatingChatPage() {
 }
 
 function FloatingChatPageContent() {
+  const t = useAITranslate();
   const controller = useAIChatController();
   const { open } = useAIChatControllerState(controller);
   const [expanded, setExpanded] = useState(false);
@@ -65,16 +67,21 @@ function FloatingChatPageContent() {
           <section className="flex flex-wrap items-start justify-between gap-5 border-b pb-8">
             <div>
               <div className="flex items-center gap-2">
-                <Badge variant="secondary">AI Components</Badge>
-                <Badge variant="outline">Global entry</Badge>
+                <Badge variant="secondary">
+                  {t("demo.badge.components", "AI Components")}
+                </Badge>
+                <Badge variant="outline">
+                  {t("demo.badge.globalEntry", "Global entry")}
+                </Badge>
               </div>
               <h1 className="mt-4 text-3xl font-semibold tracking-[-0.035em]">
-                Floating AI Chat
+                {t("demo.floating.title", "Floating AI Chat")}
               </h1>
               <p className="mt-3 max-w-3xl text-sm leading-6 text-muted-foreground">
-                A global lower-right entry for the shared AI conversation. It
-                opens as a push side panel and can expand into a focused dialog
-                without remounting the chat window.
+                {t(
+                  "demo.floating.description",
+                  "A global lower-right entry for the shared AI conversation. It opens as a push side panel and can expand into a focused dialog without remounting the chat window."
+                )}
               </p>
             </div>
           </section>
@@ -82,20 +89,26 @@ function FloatingChatPageContent() {
           <section className="space-y-5">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-                Interactive preview
+                {t("demo.floating.preview", "Interactive preview")}
               </p>
               <h2 className="mt-2 text-xl font-semibold tracking-tight">
-                Global launcher and adaptive chat surface
+                {t(
+                  "demo.floating.previewTitle",
+                  "Global launcher and adaptive chat surface"
+                )}
               </h2>
               <p className="mt-1.5 max-w-3xl text-sm leading-6 text-muted-foreground">
-                The trigger is constrained to this simulated application in the
-                demo. In production its default positioning is fixed to the
-                viewport.
+                {t(
+                  "demo.floating.previewDescription",
+                  "The trigger is constrained to this simulated application in the demo. In production its default positioning is fixed to the viewport."
+                )}
               </p>
             </div>
             <Card className="gap-0 overflow-hidden py-0">
               <div className="flex h-12 items-center justify-between border-b px-4">
-                <span className="text-sm font-medium">Application shell</span>
+                <span className="text-sm font-medium">
+                  {t("demo.floating.shell", "Application shell")}
+                </span>
                 <code className="rounded-md bg-muted px-2 py-1 text-xs text-muted-foreground">
                   AIChatFloatingTrigger → ChatSurface · side-panel/dialog
                 </code>

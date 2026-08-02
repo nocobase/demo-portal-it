@@ -5,6 +5,7 @@ import { ChatComposer, type AIChatComposerAction } from "./chat-composer";
 import { ChatHeader } from "./chat-header";
 import { ChatMessages } from "./chat-messages";
 import { ConversationList } from "./conversation-list";
+import { useAITranslate } from "../../locales/use-ai-translate";
 
 export function AIChatWindow({
   className,
@@ -21,6 +22,7 @@ export function AIChatWindow({
   disclaimer,
   onToolCallDecision,
 }: AIChatWindowProps) {
+  const t = useAITranslate();
   const { conversationListOpen, setConversationListOpen, uploadFiles } =
     useAIChatBase();
   const [draggingFiles, setDraggingFiles] = useState(false);
@@ -63,14 +65,17 @@ export function AIChatWindow({
     >
       {draggingFiles ? (
         <div className="pointer-events-none absolute inset-2 z-50 flex items-center justify-center rounded-xl border-2 border-dashed border-foreground/25 bg-background/90 text-sm font-medium shadow-sm backdrop-blur-sm">
-          Drop files to upload
+          {t("chat.dropFiles", "Drop files to upload")}
         </div>
       ) : null}
       {conversationListOpen && showConversationToggle ? (
         <button
           type="button"
           className="ai-chat-conversation-backdrop absolute inset-0 z-20 bg-black/25 backdrop-blur-[1px]"
-          aria-label="Close conversation list"
+          aria-label={t(
+            "chat.closeConversationList",
+            "Close conversation list"
+          )}
           onClick={() => setConversationListOpen(false)}
         />
       ) : null}

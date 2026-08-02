@@ -10,6 +10,7 @@ import {
 import { ChatComposer, type AIChatComposerAction } from "./chat-composer";
 import { AIChatHistoryDialog } from "./chat-history-dialog";
 import { ChatHeader } from "./chat-header";
+import { useAITranslate } from "../../locales/use-ai-translate";
 
 export type AIChatCompactProps = {
   className?: string;
@@ -36,6 +37,7 @@ export function AIChatCompact({
   disclaimer,
   onToolCallDecision,
 }: AIChatCompactProps) {
+  const t = useAITranslate();
   const { currentEmployee } = useAIChatBase();
   const { status } = useAIChatStatus();
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -56,7 +58,7 @@ export function AIChatCompact({
             <Button
               variant="ghost"
               size="icon-sm"
-              aria-label="Open message history"
+              aria-label={t("chat.openHistory", "Open message history")}
               onClick={() => setHistoryOpen(true)}
             >
               <History />
@@ -68,7 +70,9 @@ export function AIChatCompact({
       {busy ? (
         <div className="flex items-center gap-2 border-b bg-muted/25 px-4 py-2 text-xs text-muted-foreground">
           <LoaderCircle className="size-3.5 animate-spin" />
-          {currentEmployee.nickname} is working…
+          {t("chat.employeeWorking", "{{name}} is working…", {
+            name: currentEmployee.nickname,
+          })}
         </div>
       ) : null}
       <ChatComposer

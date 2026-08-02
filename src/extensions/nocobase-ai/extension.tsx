@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { lazy, Suspense, type ReactNode } from "react";
 import { Outlet, Route } from "react-router";
+import "./locales";
 
 const AIChatPage = lazy(() =>
   import("./demo").then((module) => ({ default: module.AIChatPage }))
@@ -53,6 +54,8 @@ const nocobaseAIExtension: AppExtension = {
         name: "ai-components",
         meta: {
           label: "AI Components",
+          i18nKey: "navigation.group",
+          i18nOptions: { ns: "nocobase-ai" },
           icon: <Bot />,
           acl: { type: "authenticated" },
         },
@@ -63,6 +66,8 @@ const nocobaseAIExtension: AppExtension = {
         meta: {
           parent: "ai-components",
           label: "Chat window",
+          i18nKey: "navigation.chat",
+          i18nOptions: { ns: "nocobase-ai" },
           icon: <MessageSquare />,
           description:
             "Build freely with AI while NocoBase keeps the application reliable.",
@@ -75,6 +80,8 @@ const nocobaseAIExtension: AppExtension = {
         meta: {
           parent: "ai-components",
           label: "Floating chat",
+          i18nKey: "navigation.floating",
+          i18nOptions: { ns: "nocobase-ai" },
           icon: <PanelRight />,
           acl: { type: "authenticated" },
         },
@@ -85,6 +92,8 @@ const nocobaseAIExtension: AppExtension = {
         meta: {
           parent: "ai-components",
           label: "Employee tasks",
+          i18nKey: "navigation.tasks",
+          i18nOptions: { ns: "nocobase-ai" },
           icon: <Sparkles />,
           acl: { type: "authenticated" },
         },
@@ -95,6 +104,8 @@ const nocobaseAIExtension: AppExtension = {
         meta: {
           parent: "ai-components",
           label: "Page context",
+          i18nKey: "navigation.context",
+          i18nOptions: { ns: "nocobase-ai" },
           icon: <MousePointer2 />,
           acl: { type: "authenticated" },
         },
@@ -105,6 +116,8 @@ const nocobaseAIExtension: AppExtension = {
         meta: {
           parent: "ai-components",
           label: "Tool cards",
+          i18nKey: "navigation.tools",
+          i18nOptions: { ns: "nocobase-ai" },
           icon: <Wrench />,
           acl: { type: "authenticated" },
         },

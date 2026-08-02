@@ -1,6 +1,7 @@
 import { cn } from "@/lib/utils";
 import { getAIEmployeeAvatar, type AIEmployee } from "../../providers";
 import type { CSSProperties } from "react";
+import { useAITranslate } from "../../locales/use-ai-translate";
 
 export function AIEmployeeAvatar({
   employee,
@@ -13,6 +14,7 @@ export function AIEmployeeAvatar({
   className?: string;
   style?: CSSProperties;
 }) {
+  const t = useAITranslate();
   return (
     <span
       className={cn(
@@ -23,7 +25,7 @@ export function AIEmployeeAvatar({
     >
       <img
         src={getAIEmployeeAvatar(employee?.avatar, { flip })}
-        alt={employee?.nickname ?? "AI employee"}
+        alt={employee?.nickname ?? t("chat.aiEmployee", "AI employee")}
         className="size-full object-cover"
       />
     </span>

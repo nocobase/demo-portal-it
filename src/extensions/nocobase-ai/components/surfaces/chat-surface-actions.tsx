@@ -5,6 +5,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Maximize2, PanelRight, X } from "lucide-react";
+import { useAITranslate } from "../../locales/use-ai-translate";
 
 export function ChatSurfaceActions({
   expanded,
@@ -15,6 +16,10 @@ export function ChatSurfaceActions({
   onExpandedChange: (expanded: boolean) => void;
   onClose: () => void;
 }) {
+  const t = useAITranslate();
+  const resizeLabel = expanded
+    ? t("surface.collapse", "Collapse to side panel")
+    : t("surface.expand", "Expand panel");
   return (
     <>
       <Tooltip>
@@ -23,7 +28,7 @@ export function ChatSurfaceActions({
             <Button
               variant="ghost"
               size="icon-sm"
-              aria-label={expanded ? "Collapse to side panel" : "Expand panel"}
+              aria-label={resizeLabel}
               onClick={() => onExpandedChange(!expanded)}
             />
           }
@@ -31,7 +36,7 @@ export function ChatSurfaceActions({
           {expanded ? <PanelRight /> : <Maximize2 />}
         </TooltipTrigger>
         <TooltipContent>
-          {expanded ? "Collapse to side panel" : "Expand panel"}
+          {resizeLabel}
         </TooltipContent>
       </Tooltip>
       <Tooltip>
@@ -40,14 +45,14 @@ export function ChatSurfaceActions({
             <Button
               variant="ghost"
               size="icon-sm"
-              aria-label="Close AI chat"
+              aria-label={t("surface.closeChat", "Close AI chat")}
               onClick={onClose}
             />
           }
         >
           <X />
         </TooltipTrigger>
-        <TooltipContent>Close</TooltipContent>
+        <TooltipContent>{t("actions.close", "Close")}</TooltipContent>
       </Tooltip>
     </>
   );

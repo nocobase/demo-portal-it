@@ -10,6 +10,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import type { AIToolCallDecision } from "../../providers";
 import { ChatMessages } from "./chat-messages";
 import { ConversationList } from "./conversation-list";
+import { useAITranslate } from "../../locales/use-ai-translate";
 
 export function AIChatHistoryDialog({
   open: controlledOpen,
@@ -22,6 +23,7 @@ export function AIChatHistoryDialog({
   trigger?: ReactNode;
   onToolCallDecision?: (decision: AIToolCallDecision) => void | Promise<void>;
 }) {
+  const t = useAITranslate();
   const [internalOpen, setInternalOpen] = useState(false);
   const open = controlledOpen ?? internalOpen;
   const setOpen = onOpenChange ?? setInternalOpen;
@@ -37,7 +39,7 @@ export function AIChatHistoryDialog({
         <span onClick={() => setOpen(true)}>
           {trigger ?? (
             <Button variant="ghost" size="sm">
-              <History /> Message history
+              <History /> {t("chat.messageHistory", "Message history")}
             </Button>
           )}
         </span>
@@ -49,16 +51,21 @@ export function AIChatHistoryDialog({
               <Button
                 variant="ghost"
                 size="icon-sm"
-                aria-label="Show conversations"
+                aria-label={t("chat.showConversations", "Show conversations")}
                 onClick={() => setConversationListVisible(true)}
               >
                 <Menu />
               </Button>
             ) : null}
-            <DialogTitle>Message history</DialogTitle>
+            <DialogTitle>
+              {t("chat.messageHistory", "Message history")}
+            </DialogTitle>
           </div>
           <DialogDescription className="sr-only">
-            Browse conversations and inspect the full message history.
+            {t(
+              "chat.messageHistory.description",
+              "Browse conversations and inspect the full message history."
+            )}
           </DialogDescription>
           <div className="flex min-h-0 flex-1 overflow-hidden">
             {conversationListVisible ? (

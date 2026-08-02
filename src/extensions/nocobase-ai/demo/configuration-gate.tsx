@@ -9,6 +9,7 @@ import {
   type AIModel,
 } from "../providers";
 import type { AIService } from "../services";
+import { useAITranslate } from "../locales/use-ai-translate";
 
 const previewEmployees: AIEmployee[] = [
   {
@@ -64,6 +65,7 @@ const previewService: AIService = {
 };
 
 export function AIConfigurationGate({ children }: { children: ReactNode }) {
+  const t = useAITranslate();
   const { configurationStatus, hasEnabledModels, employees } = useAI();
   const configured =
     configurationStatus === "ready" &&
@@ -88,10 +90,14 @@ export function AIConfigurationGate({ children }: { children: ReactNode }) {
     <div className="space-y-6">
       <Alert>
         <CircleAlert />
-        <AlertTitle>Preview mode</AlertTitle>
+        <AlertTitle>
+          {t("demo.configuration.previewTitle", "Preview mode")}
+        </AlertTitle>
         <AlertDescription>
-          Component examples remain available. Sending messages requires an
-          enabled AI model in the connected NocoBase application.
+          {t(
+            "demo.configuration.previewDescription",
+            "Component examples remain available. Sending messages requires an enabled AI model in the connected NocoBase application."
+          )}
         </AlertDescription>
       </Alert>
       {content}

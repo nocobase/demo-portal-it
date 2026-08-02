@@ -12,12 +12,17 @@ import {
   useBusinessReportDialog,
 } from "./business-report-dialog";
 import { asRecord, asString } from "./tool-renderer-utils";
+import { useAITranslate } from "../../locales/use-ai-translate";
 
 function ReportGeneratingProgress() {
+  const t = useAITranslate();
   return (
     <div
       role="progressbar"
-      aria-label="Generating business report"
+      aria-label={t(
+        "tool.businessReport.generating",
+        "Generating business report"
+      )}
       className="mt-3 h-1 w-full overflow-hidden rounded-full bg-muted"
     >
       <svg
@@ -41,12 +46,19 @@ function ReportGeneratingProgress() {
 }
 
 export function BusinessReportRenderer({ part }: AIToolRendererProps) {
+  const t = useAITranslate();
   const reportDialog = useBusinessReportDialog();
   const input = asRecord(part.input);
-  const title = asString(input.title) || "Business analysis report";
+  const title =
+    asString(input.title) ||
+    t("tool.businessReport.defaultTitle", "Business analysis report");
   const reportSummary = asString(input.summary);
   const summary =
-    reportSummary || "Open the report to review the generated analysis.";
+    reportSummary ||
+    t(
+      "tool.businessReport.openHint",
+      "Open the report to review the generated analysis."
+    );
   const charts = useMemo(
     () => normalizeBusinessReportCharts(input.charts),
     [input.charts]
@@ -109,10 +121,21 @@ export function BusinessReportRenderer({ part }: AIToolRendererProps) {
           </p>
           <div className="mt-2 flex flex-wrap gap-1.5">
             <Badge variant="secondary">
-              {generating ? "Generating" : "Markdown"}
+              {generating
+                ? t("tool.businessReport.generatingBadge", "Generating")
+                : "Markdown"}
             </Badge>
-            <Badge variant="outline">{charts.length} charts</Badge>
-            <Badge variant="outline">Preview and export</Badge>
+            <Badge variant="outline">
+              {t("tool.businessReport.chartCount", "{{count}} charts", {
+                count: charts.length,
+              })}
+            </Badge>
+            <Badge variant="outline">
+              {t(
+                "tool.businessReport.previewExport",
+                "Preview and export"
+              )}
+            </Badge>
           </div>
           {generating ? <ReportGeneratingProgress /> : null}
         </div>

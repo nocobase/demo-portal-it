@@ -6,6 +6,7 @@ import { Navigate, Outlet, Route, useLocation } from "react-router";
 
 import { AuthDemoPage } from "@/components/auth/demo";
 import { Header } from "@/components/app-shell/header";
+import { PageErrorBoundary } from "@/components/app-shell/page-error-boundary";
 import { SidebarNavigation } from "@/components/app-shell/sidebar";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
@@ -146,7 +147,9 @@ function DevelopmentLayout({ menuItems }: { menuItems: TreeMenuItem[] }) {
             "relative px-4 py-5 md:p-6 lg:px-8 lg:py-7"
           )}
         >
-          <Outlet />
+          <PageErrorBoundary>
+            <Outlet />
+          </PageErrorBoundary>
         </main>
       </SidebarInset>
     </SidebarProvider>

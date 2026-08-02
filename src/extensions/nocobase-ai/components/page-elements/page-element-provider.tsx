@@ -22,6 +22,7 @@ import {
   type AIFrontendToolRegistration,
   type AIWorkContextItem,
 } from "../../providers";
+import { useAITranslate } from "../../locales/use-ai-translate";
 
 const PAGE_ELEMENT_ATTRIBUTE = "data-ai-page-element";
 
@@ -103,6 +104,7 @@ export function AIPageElementProvider({
   children,
   contextFailurePolicy = "throw",
 }: AIPageElementProviderProps) {
+  const t = useAITranslate();
   const registryRef = useRef(new Map<string, RegisteredPageElement>());
   const [registeredCount, setRegisteredCount] = useState(0);
   const [request, setRequest] = useState<PickerRequest>();
@@ -283,7 +285,10 @@ export function AIPageElementProvider({
           error:
             error instanceof Error
               ? error.message
-              : "Unable to read this page element",
+              : t(
+                  "pageElement.readError",
+                  "Unable to read this page element"
+                ),
         };
         requestRef.current = failedRequest;
         setRequest(failedRequest);
@@ -304,7 +309,7 @@ export function AIPageElementProvider({
       window.removeEventListener("scroll", updateHoveredRect, true);
       window.removeEventListener("resize", updateHoveredRect);
     };
-  }, [cancelPicking, picking]);
+  }, [cancelPicking, picking, t]);
 
   const value = useMemo<AIPageElementContextValue>(
     () => ({
@@ -352,8 +357,8 @@ export function AIPageElementProvider({
                   <div className="min-w-0">
                     <div className="truncate text-sm font-medium">
                       {request.resolving
-                        ? "Reading page element…"
-                        : "Pick a page element"}
+                        ? t("pageElement.reading", "Reading page element…")
+                        : t("pageElement.pick", "Pick a page element")}
                     </div>
                     <div
                       className={cn(
@@ -362,13 +367,19 @@ export function AIPageElementProvider({
                       )}
                     >
                       {request.error ??
-                        "Hover a highlighted element, then click to add it."}
+                        t(
+                          "pageElement.hint",
+                          "Hover a highlighted element, then click to add it."
+                        )}
                     </div>
                   </div>
                   <Button
                     variant="ghost"
                     size="icon-sm"
-                    aria-label="Cancel picking page element"
+                    aria-label={t(
+                      "pageElement.cancelPicking",
+                      "Cancel picking page element"
+                    )}
                     disabled={request.resolving}
                     onClick={cancelPicking}
                   >
