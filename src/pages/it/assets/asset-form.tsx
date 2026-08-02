@@ -125,9 +125,28 @@ function normalize(values: Values) {
 export function AssetCreate() {
   const translate = useTranslate();
   const closeTo = useContextualCloseTo();
+  const { beforeClose, confirmation } = useRefineUnsavedChangesGuard();
+  return (
+    <>
+      <RouteDialog
+        title={tt(translate, "it.assets.create.title", "Register asset")}
+        description={tt(translate, "it.assets.create.description", "Add a new device to the asset register.")}
+        closeLabel={tt(translate, "buttons.close", "Close")}
+        closeTo={closeTo}
+        beforeClose={beforeClose}
+        className="sm:max-w-2xl"
+      >
+        <AssetCreateForm />
+      </RouteDialog>
+      {confirmation}
+    </>
+  );
+}
+
+function AssetCreateForm() {
+  const translate = useTranslate();
   const close = useRouteSurfaceClose();
   const { setWarnWhen } = useWarnAboutChange();
-  const { beforeClose, confirmation } = useRefineUnsavedChangesGuard();
   const [values, setValues] = useState<Values>({ status: "Available" });
   const [error, setError] = useState("");
   const create = useCreate<AssetRecord, HttpError>();
@@ -150,30 +169,18 @@ export function AssetCreate() {
     );
   };
   return (
-    <>
-      <RouteDialog
-        title={tt(translate, "it.assets.create.title", "Register asset")}
-        description={tt(translate, "it.assets.create.description", "Add a new device to the asset register.")}
-        closeLabel={tt(translate, "buttons.close", "Close")}
-        closeTo={closeTo}
-        beforeClose={beforeClose}
-        className="sm:max-w-2xl"
-      >
-        <form onSubmit={submit} className="grid min-h-0 gap-4 overflow-y-auto p-5">
-          <AssetFields values={values} set={set} />
-          {error ? <p className="text-xs text-red-500">{error}</p> : null}
-          <div className="flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={() => void close()}>
-              {tt(translate, "buttons.cancel", "Cancel")}
-            </Button>
-            <Button type="submit" disabled={create.mutation.isPending}>
-              {tt(translate, "it.assets.create.submit", "Register asset")}
-            </Button>
-          </div>
-        </form>
-      </RouteDialog>
-      {confirmation}
-    </>
+    <form onSubmit={submit} className="grid min-h-0 gap-4 overflow-y-auto p-5">
+      <AssetFields values={values} set={set} />
+      {error ? <p className="text-xs text-red-500">{error}</p> : null}
+      <div className="flex justify-end gap-2">
+        <Button type="button" variant="outline" onClick={() => void close()}>
+          {tt(translate, "buttons.cancel", "Cancel")}
+        </Button>
+        <Button type="submit" disabled={create.mutation.isPending}>
+          {tt(translate, "it.assets.create.submit", "Register asset")}
+        </Button>
+      </div>
+    </form>
   );
 }
 
@@ -181,9 +188,29 @@ export function AssetEdit() {
   const translate = useTranslate();
   const { id } = useParams<{ id: string }>();
   const closeTo = useContextualCloseTo();
+  const { beforeClose, confirmation } = useRefineUnsavedChangesGuard();
+  const { result: record } = useShow<AssetRecord>({ resource: "it_assets", id });
+  return (
+    <>
+      <RouteDialog
+        title={tt(translate, "it.assets.edit.title", "Edit asset")}
+        description={record?.name ?? ""}
+        closeLabel={tt(translate, "buttons.close", "Close")}
+        closeTo={closeTo}
+        beforeClose={beforeClose}
+        className="sm:max-w-2xl"
+      >
+        <AssetEditForm id={id} />
+      </RouteDialog>
+      {confirmation}
+    </>
+  );
+}
+
+function AssetEditForm({ id }: { id?: string }) {
+  const translate = useTranslate();
   const close = useRouteSurfaceClose();
   const { setWarnWhen } = useWarnAboutChange();
-  const { beforeClose, confirmation } = useRefineUnsavedChangesGuard();
   const { result: record } = useShow<AssetRecord>({ resource: "it_assets", id });
   const [values, setValues] = useState<Values | null>(null);
   const [error, setError] = useState("");
@@ -230,29 +257,17 @@ export function AssetEdit() {
     );
   };
   return (
-    <>
-      <RouteDialog
-        title={tt(translate, "it.assets.edit.title", "Edit asset")}
-        description={record?.name ?? ""}
-        closeLabel={tt(translate, "buttons.close", "Close")}
-        closeTo={closeTo}
-        beforeClose={beforeClose}
-        className="sm:max-w-2xl"
-      >
-        <form onSubmit={submit} className="grid min-h-0 gap-4 overflow-y-auto p-5">
-          <AssetFields values={current} set={set} />
-          {error ? <p className="text-xs text-red-500">{error}</p> : null}
-          <div className="flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={() => void close()}>
-              {tt(translate, "buttons.cancel", "Cancel")}
-            </Button>
-            <Button type="submit" disabled={update.mutation.isPending}>
-              {tt(translate, "buttons.save", "Save")}
-            </Button>
-          </div>
-        </form>
-      </RouteDialog>
-      {confirmation}
-    </>
+    <form onSubmit={submit} className="grid min-h-0 gap-4 overflow-y-auto p-5">
+      <AssetFields values={current} set={set} />
+      {error ? <p className="text-xs text-red-500">{error}</p> : null}
+      <div className="flex justify-end gap-2">
+        <Button type="button" variant="outline" onClick={() => void close()}>
+          {tt(translate, "buttons.cancel", "Cancel")}
+        </Button>
+        <Button type="submit" disabled={update.mutation.isPending}>
+          {tt(translate, "buttons.save", "Save")}
+        </Button>
+      </div>
+    </form>
   );
 }

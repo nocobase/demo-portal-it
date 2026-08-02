@@ -124,9 +124,28 @@ function normalize(values: Values) {
 export function LicenseCreate() {
   const translate = useTranslate();
   const closeTo = useContextualCloseTo();
+  const { beforeClose, confirmation } = useRefineUnsavedChangesGuard();
+  return (
+    <>
+      <RouteDialog
+        title={tt(translate, "it.licenses.create.title", "Add license")}
+        description={tt(translate, "it.licenses.create.description", "Register a new software license.")}
+        closeLabel={tt(translate, "buttons.close", "Close")}
+        closeTo={closeTo}
+        beforeClose={beforeClose}
+        className="sm:max-w-2xl"
+      >
+        <LicenseCreateForm />
+      </RouteDialog>
+      {confirmation}
+    </>
+  );
+}
+
+function LicenseCreateForm() {
+  const translate = useTranslate();
   const close = useRouteSurfaceClose();
   const { setWarnWhen } = useWarnAboutChange();
-  const { beforeClose, confirmation } = useRefineUnsavedChangesGuard();
   const [values, setValues] = useState<Values>({ status: "Active" });
   const [error, setError] = useState("");
   const create = useCreate<LicenseRecord, HttpError>();
@@ -149,30 +168,18 @@ export function LicenseCreate() {
     );
   };
   return (
-    <>
-      <RouteDialog
-        title={tt(translate, "it.licenses.create.title", "Add license")}
-        description={tt(translate, "it.licenses.create.description", "Register a new software license.")}
-        closeLabel={tt(translate, "buttons.close", "Close")}
-        closeTo={closeTo}
-        beforeClose={beforeClose}
-        className="sm:max-w-2xl"
-      >
-        <form onSubmit={submit} className="grid min-h-0 gap-4 overflow-y-auto p-5">
-          <LicenseFields values={values} set={set} />
-          {error ? <p className="text-xs text-red-500">{error}</p> : null}
-          <div className="flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={() => void close()}>
-              {tt(translate, "buttons.cancel", "Cancel")}
-            </Button>
-            <Button type="submit" disabled={create.mutation.isPending}>
-              {tt(translate, "it.licenses.create.submit", "Add license")}
-            </Button>
-          </div>
-        </form>
-      </RouteDialog>
-      {confirmation}
-    </>
+    <form onSubmit={submit} className="grid min-h-0 gap-4 overflow-y-auto p-5">
+      <LicenseFields values={values} set={set} />
+      {error ? <p className="text-xs text-red-500">{error}</p> : null}
+      <div className="flex justify-end gap-2">
+        <Button type="button" variant="outline" onClick={() => void close()}>
+          {tt(translate, "buttons.cancel", "Cancel")}
+        </Button>
+        <Button type="submit" disabled={create.mutation.isPending}>
+          {tt(translate, "it.licenses.create.submit", "Add license")}
+        </Button>
+      </div>
+    </form>
   );
 }
 
@@ -180,9 +187,29 @@ export function LicenseEdit() {
   const translate = useTranslate();
   const { id } = useParams<{ id: string }>();
   const closeTo = useContextualCloseTo();
+  const { beforeClose, confirmation } = useRefineUnsavedChangesGuard();
+  const { result: record } = useShow<LicenseRecord>({ resource: "it_licenses", id });
+  return (
+    <>
+      <RouteDialog
+        title={tt(translate, "it.licenses.edit.title", "Edit license")}
+        description={record?.name ?? ""}
+        closeLabel={tt(translate, "buttons.close", "Close")}
+        closeTo={closeTo}
+        beforeClose={beforeClose}
+        className="sm:max-w-2xl"
+      >
+        <LicenseEditForm id={id} />
+      </RouteDialog>
+      {confirmation}
+    </>
+  );
+}
+
+function LicenseEditForm({ id }: { id?: string }) {
+  const translate = useTranslate();
   const close = useRouteSurfaceClose();
   const { setWarnWhen } = useWarnAboutChange();
-  const { beforeClose, confirmation } = useRefineUnsavedChangesGuard();
   const { result: record } = useShow<LicenseRecord>({ resource: "it_licenses", id });
   const [values, setValues] = useState<Values | null>(null);
   const [error, setError] = useState("");
@@ -227,29 +254,17 @@ export function LicenseEdit() {
     );
   };
   return (
-    <>
-      <RouteDialog
-        title={tt(translate, "it.licenses.edit.title", "Edit license")}
-        description={record?.name ?? ""}
-        closeLabel={tt(translate, "buttons.close", "Close")}
-        closeTo={closeTo}
-        beforeClose={beforeClose}
-        className="sm:max-w-2xl"
-      >
-        <form onSubmit={submit} className="grid min-h-0 gap-4 overflow-y-auto p-5">
-          <LicenseFields values={current} set={set} />
-          {error ? <p className="text-xs text-red-500">{error}</p> : null}
-          <div className="flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={() => void close()}>
-              {tt(translate, "buttons.cancel", "Cancel")}
-            </Button>
-            <Button type="submit" disabled={update.mutation.isPending}>
-              {tt(translate, "buttons.save", "Save")}
-            </Button>
-          </div>
-        </form>
-      </RouteDialog>
-      {confirmation}
-    </>
+    <form onSubmit={submit} className="grid min-h-0 gap-4 overflow-y-auto p-5">
+      <LicenseFields values={current} set={set} />
+      {error ? <p className="text-xs text-red-500">{error}</p> : null}
+      <div className="flex justify-end gap-2">
+        <Button type="button" variant="outline" onClick={() => void close()}>
+          {tt(translate, "buttons.cancel", "Cancel")}
+        </Button>
+        <Button type="submit" disabled={update.mutation.isPending}>
+          {tt(translate, "buttons.save", "Save")}
+        </Button>
+      </div>
+    </form>
   );
 }

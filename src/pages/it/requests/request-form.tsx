@@ -147,11 +147,45 @@ function addDaysIso(days: number) {
 export function RequestCreate() {
   const translate = useTranslate();
   const closeTo = useContextualCloseTo();
-  const close = useRouteSurfaceClose();
-  const { setWarnWhen } = useWarnAboutChange();
   const { beforeClose, confirmation } = useRefineUnsavedChangesGuard();
   const [params] = useSearchParams();
   const typeId = params.get("type");
+  const { result: typeRecord } = useOne<RequestTypeRecord>({
+    resource: "it_request_types",
+    id: typeId ?? undefined,
+    queryOptions: { enabled: !!typeId, retry: false },
+  });
+  return (
+    <>
+      <RouteDialog
+        title={tt(translate, "it.requests.create.title", "New request")}
+        description={
+          typeRecord
+            ? tt(translate, "it.requests.create.forService", "Requesting: {{name}}", {
+                name: typeRecord.name,
+              })
+            : tt(
+                translate,
+                "it.requests.create.description",
+                "Raise a service request or report an incident."
+              )
+        }
+        closeLabel={tt(translate, "buttons.close", "Close")}
+        closeTo={closeTo}
+        beforeClose={beforeClose}
+        className="sm:max-w-2xl"
+      >
+        <RequestCreateForm typeRecord={typeRecord} />
+      </RouteDialog>
+      {confirmation}
+    </>
+  );
+}
+
+function RequestCreateForm({ typeRecord }: { typeRecord?: RequestTypeRecord }) {
+  const translate = useTranslate();
+  const close = useRouteSurfaceClose();
+  const { setWarnWhen } = useWarnAboutChange();
 
   const [values, setValues] = useState<Values>({
     requestType: "Service request",
@@ -164,12 +198,6 @@ export function RequestCreate() {
   const [prefilled, setPrefilled] = useState(false);
 
   const create = useCreate<RequestRecord, HttpError>();
-
-  const { result: typeRecord } = useOne<RequestTypeRecord>({
-    resource: "it_request_types",
-    id: typeId ?? undefined,
-    queryOptions: { enabled: !!typeId, retry: false },
-  });
 
   const { result: users } = useList<UserRef>({
     resource: "users",
@@ -260,26 +288,7 @@ export function RequestCreate() {
   };
 
   return (
-    <>
-      <RouteDialog
-        title={tt(translate, "it.requests.create.title", "New request")}
-        description={
-          typeRecord
-            ? tt(translate, "it.requests.create.forService", "Requesting: {{name}}", {
-                name: typeRecord.name,
-              })
-            : tt(
-                translate,
-                "it.requests.create.description",
-                "Raise a service request or report an incident."
-              )
-        }
-        closeLabel={tt(translate, "buttons.close", "Close")}
-        closeTo={closeTo}
-        beforeClose={beforeClose}
-        className="sm:max-w-2xl"
-      >
-        <form onSubmit={submit} className="grid min-h-0 gap-4 overflow-y-auto p-5">
+    <form onSubmit={submit} className="grid min-h-0 gap-4 overflow-y-auto p-5">
           {/* AI assist panel */}
           <section className="relative overflow-hidden rounded-xl border border-sky-400/35 bg-sky-50/60 p-3 dark:bg-sky-400/[0.07]">
             <div className="absolute inset-y-0 left-0 w-0.5 bg-sky-400" />
@@ -456,9 +465,6 @@ export function RequestCreate() {
               {tt(translate, "it.requests.create.submit", "Submit request")}
             </Button>
           </div>
-        </form>
-      </RouteDialog>
-      {confirmation}
-    </>
+    </form>
   );
 }

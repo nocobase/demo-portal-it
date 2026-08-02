@@ -331,9 +331,32 @@ function normalize(values: Values) {
 export function RepairCreate() {
   const translate = useTranslate();
   const closeTo = useContextualCloseTo();
+  const { beforeClose, confirmation } = useRefineUnsavedChangesGuard();
+  return (
+    <>
+      <RouteDialog
+        title={tt(translate, "it.repairs.create.title", "Log repair")}
+        description={tt(
+          translate,
+          "it.repairs.create.description",
+          "Record a new device repair."
+        )}
+        closeLabel={tt(translate, "buttons.close", "Close")}
+        closeTo={closeTo}
+        beforeClose={beforeClose}
+        className="sm:max-w-2xl"
+      >
+        <RepairCreateForm />
+      </RouteDialog>
+      {confirmation}
+    </>
+  );
+}
+
+function RepairCreateForm() {
+  const translate = useTranslate();
   const close = useRouteSurfaceClose();
   const { setWarnWhen } = useWarnAboutChange();
-  const { beforeClose, confirmation } = useRefineUnsavedChangesGuard();
   const [values, setValues] = useState<Values>({ status: "Open", startedAt: today() });
   const [error, setError] = useState("");
   const create = useCreate<RepairRecord, HttpError>();
@@ -356,33 +379,17 @@ export function RepairCreate() {
     );
   };
   return (
-    <>
-      <RouteDialog
-        title={tt(translate, "it.repairs.create.title", "Log repair")}
-        description={tt(
-          translate,
-          "it.repairs.create.description",
-          "Record a new device repair."
-        )}
-        closeLabel={tt(translate, "buttons.close", "Close")}
-        closeTo={closeTo}
-        beforeClose={beforeClose}
-        className="sm:max-w-2xl"
-      >
-        <form onSubmit={submit} className="grid min-h-0 gap-4 overflow-y-auto p-5">
-          <RepairFields values={values} set={set} />
-          {error ? <p className="text-xs text-red-500">{error}</p> : null}
-          <div className="flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={() => void close()}>
-              {tt(translate, "buttons.cancel", "Cancel")}
-            </Button>
-            <Button type="submit" disabled={create.mutation.isPending}>
-              {tt(translate, "it.repairs.create.submit", "Log repair")}
-            </Button>
-          </div>
-        </form>
-      </RouteDialog>
-      {confirmation}
-    </>
+    <form onSubmit={submit} className="grid min-h-0 gap-4 overflow-y-auto p-5">
+      <RepairFields values={values} set={set} />
+      {error ? <p className="text-xs text-red-500">{error}</p> : null}
+      <div className="flex justify-end gap-2">
+        <Button type="button" variant="outline" onClick={() => void close()}>
+          {tt(translate, "buttons.cancel", "Cancel")}
+        </Button>
+        <Button type="submit" disabled={create.mutation.isPending}>
+          {tt(translate, "it.repairs.create.submit", "Log repair")}
+        </Button>
+      </div>
+    </form>
   );
 }
