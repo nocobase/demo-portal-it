@@ -57,7 +57,14 @@ export type UseAiFillOptions = {
    */
   fallback?: (input: string) => Record<string, unknown> | undefined;
   timeoutMs?: number;
-  /** Extra attempts after the first (reasoning models occasionally return ""). */
+  /**
+   * Extra attempts after the first. `deepseek-v4-flash` is a reasoning model and
+   * intermittently spends its whole budget on reasoning tokens, returning an
+   * empty `content` alongside `finish_reason: "stop"`. `max_tokens` cannot be
+   * raised from here — it is not configured on the llmService and the
+   * per-request `model` object does not carry it — so retrying is the only
+   * lever available on the client.
+   */
   retries?: number;
 };
 
@@ -189,7 +196,7 @@ export function useAiFill(options: UseAiFillOptions): UseAiFillResult {
     instructions,
     fallback,
     timeoutMs = DEFAULT_TIMEOUT_MS,
-    retries = 1,
+    retries = 2,
   } = options;
 
   const [status, setStatus] = useState<AiFillStatus>("idle");
