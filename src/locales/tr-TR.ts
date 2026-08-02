@@ -290,4 +290,8 @@ export const starter = {
   "auth.brand.foundationBody": "Güvenilir veri, erişim kontrolü, iş akışları ve yönetişim.",
   "auth.brand.tagline": "Üstte özgürlük, altta güven.",
   "auth.brand.headline": "AI özgürce inşa etsin. NocoBase onu güvenilir kılar.",
+  "buildStory.copyBuildPrompt": "Derleme istemini kopyala",
+  "buildStory.copyBuildPromptHint": "Bu uygulamayı kendi coding agent'ınızla sıfırdan yeniden oluşturan istemi kopyalayın",
+  "buildStory.copyConnectPrompt": "Bağlantı istemini kopyala",
+  "buildStory.copyConnectPromptHint": "Uygulamayı değiştirebilmesi için coding agent'ınızı bu instance'a bağlayan istemi kopyalayın",
 } as const;

@@ -290,4 +290,8 @@ export const starter = {
   "auth.brand.foundationBody": "Datos confiables, control de acceso, flujos de trabajo y gobernanza.",
   "auth.brand.tagline": "Libertad arriba. Confianza abajo.",
   "auth.brand.headline": "Deja que la IA construya libremente. NocoBase lo mantiene confiable.",
+  "buildStory.copyBuildPrompt": "Copiar prompt de build",
+  "buildStory.copyBuildPromptHint": "Copia un prompt que reconstruye esta app desde cero con tu propio coding agent",
+  "buildStory.copyConnectPrompt": "Copiar prompt de conexión",
+  "buildStory.copyConnectPromptHint": "Copia un prompt que conecta tu coding agent a esta instancia para que pueda modificar la app",
 } as const;

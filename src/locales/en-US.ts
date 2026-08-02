@@ -330,4 +330,8 @@ export const starter = {
   "ai.fill.error.unavailable":
     "The AI assistant is unavailable right now. Nothing was filled \u2014 please fill the form manually.",
   "it.field.suggestedFix": "Suggested resolution",
+  "buildStory.copyBuildPrompt": "Copy build prompt",
+  "buildStory.copyBuildPromptHint": "Copy a prompt that rebuilds this app from scratch with your own coding agent",
+  "buildStory.copyConnectPrompt": "Copy connect prompt",
+  "buildStory.copyConnectPromptHint": "Copy a prompt that connects your coding agent to this instance so it can modify the app",
 } as const;

@@ -290,4 +290,8 @@ export const starter = {
   "auth.brand.foundationBody": "विश्वसनीय डेटा, एक्सेस नियंत्रण, वर्कफ़्लो और प्रशासन।",
   "auth.brand.tagline": "ऊपर स्वतंत्रता, नीचे विश्वास।",
   "auth.brand.headline": "AI को स्वतंत्र रूप से बनाने दें। NocoBase इसे विश्वसनीय रखता है।",
+  "buildStory.copyBuildPrompt": "बिल्ड प्रॉम्प्ट कॉपी करें",
+  "buildStory.copyBuildPromptHint": "अपने कोडिंग agent के साथ इस ऐप को स्क्रैच से फिर से बनाने वाला प्रॉम्प्ट कॉपी करें",
+  "buildStory.copyConnectPrompt": "कनेक्ट प्रॉम्प्ट कॉपी करें",
+  "buildStory.copyConnectPromptHint": "अपने कोडिंग agent को इस इंस्टेंस से जोड़ने वाला प्रॉम्प्ट कॉपी करें ताकि वह ऐप को संशोधित कर सके",
 } as const;

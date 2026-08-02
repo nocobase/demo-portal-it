@@ -2,6 +2,7 @@ import { useTranslate } from "@refinedev/core";
 import { Bot, Check, ChevronDown, Clock, Copy, Layers, Sparkles } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
+import { buildReplicatePrompt } from "./replicate-prompt";
 
 // ---------------------------------------------------------------------------
 // "Behind the build" — a pinned strip at the top of an app's home page that
@@ -89,7 +90,8 @@ function buildAgentPrompt() {
     `Portal name: ${portal}`,
     "",
     "Setup:",
-    "1. Install the NocoBase CLI (the Portal commands ship in the 3.0 alpha channel):",
+    "1. Install the NocoBase CLI:",
+    "   # NocoBase 3.0's AI mode is a preview and currently only ships on the latest alpha",
     "     npm i -g @nocobase/cli@alpha        # gives you the `nb` command",
     "2. Connect the CLI to this instance:",
     `     nb env add mydemo --api-base-url ${apiBase} --auth-type token --access-token <YOUR_TOKEN>`,
@@ -141,7 +143,15 @@ async function copyToClipboard(text: string) {
   }
 }
 
-function CopyPromptButton() {
+function CopyPromptButton({
+  getText,
+  label,
+  hint,
+}: {
+  getText: () => string;
+  label: string;
+  hint: string;
+}) {
   const translate = useTranslate();
   const [copied, setCopied] = useState(false);
 
@@ -155,24 +165,45 @@ function CopyPromptButton() {
     <button
       type="button"
       onClick={async () => {
-        if (await copyToClipboard(buildAgentPrompt())) setCopied(true);
+        if (await copyToClipboard(getText())) setCopied(true);
       }}
-      title={translate(
-        "buildStory.copyPromptHint",
-        "Copy a ready-to-paste prompt for your own coding agent"
-      )}
+      title={hint}
       className={cn(
-        "ml-auto inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-[11px] font-medium transition-colors",
+        "inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-[11px] font-medium transition-colors",
         copied
           ? "border-primary/40 bg-primary/10 text-primary"
           : "border-border/70 bg-background/60 text-muted-foreground hover:border-primary/40 hover:text-foreground"
       )}
     >
       {copied ? <Check className="size-3" /> : <Copy className="size-3" />}
-      {copied
-        ? translate("buildStory.promptCopied", "Copied!")
-        : translate("buildStory.copyPrompt", "Copy agent prompt")}
+      {copied ? translate("buildStory.promptCopied", "Copied!") : label}
     </button>
+  );
+}
+
+// Two prompts: one rebuilds the app from scratch, one connects an agent to
+// this running instance to change it.
+function CopyPromptButtons() {
+  const translate = useTranslate();
+  return (
+    <div className="ml-auto flex flex-wrap items-center justify-end gap-1.5">
+      <CopyPromptButton
+        getText={buildReplicatePrompt}
+        label={translate("buildStory.copyBuildPrompt", "Copy build prompt")}
+        hint={translate(
+          "buildStory.copyBuildPromptHint",
+          "Copy a prompt that rebuilds this app from scratch with your own coding agent"
+        )}
+      />
+      <CopyPromptButton
+        getText={buildAgentPrompt}
+        label={translate("buildStory.copyConnectPrompt", "Copy connect prompt")}
+        hint={translate(
+          "buildStory.copyConnectPromptHint",
+          "Copy a prompt that connects your coding agent to this instance so it can modify the app"
+        )}
+      />
+    </div>
   );
 }
 
@@ -275,7 +306,7 @@ export function BuildStoryBanner({ story }: { story: BuildStory }) {
               <ModelPill key={m} model={m} />
             ))}
           </div>
-          <CopyPromptButton />
+          <CopyPromptButtons />
         </div>
 
         {/* expandable gantt timeline */}

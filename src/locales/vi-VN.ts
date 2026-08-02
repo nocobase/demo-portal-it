@@ -290,4 +290,8 @@ export const starter = {
   "auth.brand.foundationBody": "Dữ liệu đáng tin cậy, kiểm soát truy cập, quy trình làm việc và quản trị.",
   "auth.brand.tagline": "Tự do phía trên. Vững tin phía dưới.",
   "auth.brand.headline": "Để AI tự do xây dựng. NocoBase đảm bảo độ tin cậy.",
+  "buildStory.copyBuildPrompt": "Sao chép lời nhắc xây dựng",
+  "buildStory.copyBuildPromptHint": "Sao chép lời nhắc để xây dựng lại ứng dụng này từ đầu bằng agent lập trình của bạn",
+  "buildStory.copyConnectPrompt": "Sao chép lời nhắc kết nối",
+  "buildStory.copyConnectPromptHint": "Sao chép lời nhắc để kết nối agent lập trình của bạn với instance này để nó có thể sửa đổi ứng dụng",
 } as const;

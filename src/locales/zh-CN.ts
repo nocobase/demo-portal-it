@@ -313,4 +313,8 @@ export const starter = {
   "ai.fill.error.unavailable":
     "AI 助手当前不可用，未填写任何内容 \u2014 请手动填写表单。",
   "it.field.suggestedFix": "建议处理方案",
+  "buildStory.copyBuildPrompt": "复制复刻提示词",
+  "buildStory.copyBuildPromptHint": "复制一段提示词，用你自己的编码 agent 从零复刻这个应用",
+  "buildStory.copyConnectPrompt": "复制接入提示词",
+  "buildStory.copyConnectPromptHint": "复制一段提示词，把你的编码 agent 接入本实例来修改这个应用",
 } as const;

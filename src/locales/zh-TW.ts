@@ -290,4 +290,8 @@ export const starter = {
   "auth.brand.foundationBody": "可靠的資料、存取控制、工作流程與治理。",
   "auth.brand.tagline": "自由在上，可靠在下。",
   "auth.brand.headline": "讓 AI 自由建構，NocoBase 確保可靠。",
+  "buildStory.copyBuildPrompt": "複製建置提示",
+  "buildStory.copyBuildPromptHint": "複製可用你自己的 coding agent 從頭重建此應用程式的提示",
+  "buildStory.copyConnectPrompt": "複製連線提示",
+  "buildStory.copyConnectPromptHint": "複製可將你的 coding agent 連線到此實例以修改應用程式的提示",
 } as const;
