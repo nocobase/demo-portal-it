@@ -1,11 +1,6 @@
 import type { AppExtension } from "@nocobase/portal-sdk/extensions";
+import { defineAppRoutes } from "@nocobase/portal-sdk/routing";
 import { ShieldAlert } from "lucide-react";
-import { lazy, Suspense } from "react";
-import { Route } from "react-router";
-
-import { LoadingState } from "@/components/app-shell/loading-state";
-
-const ErrorBoundaryDemo = lazy(() => import("./demo"));
 
 const errorBoundaryExtension: AppExtension = {
   id: "nocobase-error-boundary",
@@ -22,17 +17,13 @@ const errorBoundaryExtension: AppExtension = {
         },
       },
     ],
-    routes: (
-      <Route
-        key="nocobase-error-boundary"
-        path="error-boundary"
-        element={
-          <Suspense fallback={<LoadingState className="min-h-80" />}>
-            <ErrorBoundaryDemo />
-          </Suspense>
-        }
-      />
-    ),
+    routes: defineAppRoutes([
+      {
+        name: "development.error-boundary",
+        path: "error-boundary",
+        lazy: () => import("./demo"),
+      },
+    ]),
   },
 };
 

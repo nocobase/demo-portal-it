@@ -1,17 +1,6 @@
 import type { AppExtension } from "@nocobase/portal-sdk/extensions";
+import { defineAppRoutes } from "@nocobase/portal-sdk/routing";
 import { Blocks, PanelsTopLeft, ShieldCheck } from "lucide-react";
-import { lazy } from "react";
-import { Outlet, Route } from "react-router";
-import { LazyAclRoute } from "./demo/lazy-route";
-
-const AclComponentsPage = lazy(() =>
-  import("./demo/components").then((module) => ({
-    default: module.AclComponentsPage,
-  }))
-);
-const AclPatternsPage = lazy(() =>
-  import("./demo").then((module) => ({ default: module.AclPatternsPage }))
-);
 
 const nocobaseAclExtension: AppExtension = {
   id: "nocobase-acl",
@@ -47,26 +36,30 @@ const nocobaseAclExtension: AppExtension = {
         },
       },
     ],
-    routes: (
-      <Route key="nocobase-acl" path="acl" element={<Outlet />}>
-        <Route
-          index
-          element={
-            <LazyAclRoute>
-              <AclComponentsPage />
-            </LazyAclRoute>
-          }
-        />
-        <Route
-          path="patterns"
-          element={
-            <LazyAclRoute>
-              <AclPatternsPage />
-            </LazyAclRoute>
-          }
-        />
-      </Route>
-    ),
+    routes: defineAppRoutes([
+      {
+        name: "development.acl",
+        path: "acl",
+        children: [
+          {
+            name: "development.acl.components",
+            index: true,
+            lazy: () =>
+              import("./demo/components").then((module) => ({
+                default: module.AclComponentsPage,
+              })),
+          },
+          {
+            name: "development.acl.patterns",
+            path: "patterns",
+            lazy: () =>
+              import("./demo").then((module) => ({
+                default: module.AclPatternsPage,
+              })),
+          },
+        ],
+      },
+    ]),
   },
 };
 

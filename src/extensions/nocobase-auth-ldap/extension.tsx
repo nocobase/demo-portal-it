@@ -1,14 +1,10 @@
 import { lazy } from "react";
 import { ContactRound } from "lucide-react";
-import { Route } from "react-router";
 
 import type { AppExtension } from "@nocobase/portal-sdk/extensions";
-import { AuthDemoRoute } from "@/components/auth/demo";
+import { defineAppRoutes } from "@nocobase/portal-sdk/routing";
 
 const LdapSignInForm = lazy(() => import("./ldap-sign-in-form"));
-const LdapAuthDemoPage = lazy(() =>
-  import("./demo").then((module) => ({ default: module.LdapAuthDemoPage }))
-);
 
 const ldapAuthExtension: AppExtension = {
   id: "nocobase-auth-ldap",
@@ -25,16 +21,16 @@ const ldapAuthExtension: AppExtension = {
         },
       },
     ],
-    routes: (
-      <Route
-        path="auth/ldap"
-        element={
-          <AuthDemoRoute>
-            <LdapAuthDemoPage />
-          </AuthDemoRoute>
-        }
-      />
-    ),
+    routes: defineAppRoutes([
+      {
+        name: "development.auth.ldap",
+        path: "auth/ldap",
+        lazy: () =>
+          import("./demo").then((module) => ({
+            default: module.LdapAuthDemoPage,
+          })),
+      },
+    ]),
   },
   authAdapters: [
     {

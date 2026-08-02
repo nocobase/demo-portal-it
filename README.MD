@@ -72,6 +72,10 @@ Installed extensions live in `src/extensions` and are ordinary
 application-owned source files. Their providers, resources, routes, login
 adapters, and user-menu items are discovered automatically.
 
+Routes declared with `defineAppRoutes` can use `lazy: () => import(...)` to
+keep page modules out of the initial bundle while preserving synchronous menu,
+resource, and access metadata.
+
 Set `registryRoutesEnabled` to `false` in `src/routes.tsx` when replacing the
 bundled example navigation with application-owned routes. Installed extension
 providers, login adapters, and the `/dev` component showcases remain available.

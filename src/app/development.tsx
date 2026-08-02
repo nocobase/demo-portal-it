@@ -1,15 +1,19 @@
 import type { ResourceProps, TreeMenuItem } from "@refinedev/core";
 import type { AppExtension } from "@nocobase/portal-sdk/extensions";
+import {
+  defineAppRoutes,
+  renderAppRoutes,
+} from "@nocobase/portal-sdk/routing";
 import { KeyRound, PanelsTopLeft } from "lucide-react";
 import type { ReactElement } from "react";
 import { Navigate, Outlet, Route, useLocation } from "react-router";
 
-import { AuthDemoPage } from "@/components/auth/demo";
 import { Header } from "@/components/app-shell/header";
 import { PageErrorBoundary } from "@/components/app-shell/page-error-boundary";
 import { SidebarNavigation } from "@/components/app-shell/sidebar";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
+import { RouteAccessGuard } from "./route-access-guard";
 
 const coreDevelopmentResources: ResourceProps[] = [
   {
@@ -32,6 +36,17 @@ const coreDevelopmentResources: ResourceProps[] = [
     },
   },
 ];
+
+const coreDevelopmentRoutes = defineAppRoutes([
+  {
+    name: "development.auth",
+    path: "auth",
+    lazy: () =>
+      import("@/components/auth/demo").then((module) => ({
+        default: module.AuthDemoPage,
+      })),
+  },
+]);
 
 const toDevelopmentPath = (path: string) =>
   `/dev/${path.replace(/^\/+/, "")}`.replace(/\/+$/, "");
@@ -113,9 +128,15 @@ export function createDevelopmentRoute(
 ): ReactElement {
   const menuItems = collectDevelopmentMenu(extensions);
   const firstRoute = findFirstRoute(menuItems) ?? "/";
-  const routes = extensions
-    .map((extension) => extension.dev?.routes)
-    .filter((route): route is ReactElement => Boolean(route));
+  const routes = renderAppRoutes(
+    [
+      ...coreDevelopmentRoutes,
+      ...extensions.flatMap((extension) => extension.dev?.routes ?? []),
+    ],
+    {
+      AccessGuard: RouteAccessGuard,
+    }
+  );
 
   return (
     <Route
@@ -124,7 +145,6 @@ export function createDevelopmentRoute(
       element={<DevelopmentLayout menuItems={menuItems} />}
     >
       <Route index element={<Navigate to={firstRoute} replace />} />
-      <Route path="auth" element={<AuthDemoPage />} />
       {routes}
     </Route>
   );

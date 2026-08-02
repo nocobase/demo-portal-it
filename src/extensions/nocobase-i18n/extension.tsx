@@ -1,15 +1,9 @@
 import type { AppExtension } from "@nocobase/portal-sdk/extensions";
-import { LoadingState } from "@/components/app-shell/loading-state";
+import { defineAppRoutes } from "@nocobase/portal-sdk/routing";
 import { Languages } from "lucide-react";
-import { lazy, Suspense } from "react";
-import { Route } from "react-router";
 import { LanguageUserMenuItems } from "./components";
 import "./locales";
 import { NocoBaseI18nBootstrap } from "./provider";
-
-const I18nDemoPage = lazy(() =>
-  import("./demo").then((module) => ({ default: module.I18nDemoPage }))
-);
 
 const nocobaseI18nExtension: AppExtension = {
   id: "nocobase-i18n",
@@ -31,17 +25,16 @@ const nocobaseI18nExtension: AppExtension = {
         },
       },
     ],
-    routes: (
-      <Route
-        key="nocobase-i18n-demo"
-        path="i18n"
-        element={
-          <Suspense fallback={<LoadingState className="min-h-80" />}>
-            <I18nDemoPage />
-          </Suspense>
-        }
-      />
-    ),
+    routes: defineAppRoutes([
+      {
+        name: "development.i18n",
+        path: "i18n",
+        lazy: () =>
+          import("./demo").then((module) => ({
+            default: module.I18nDemoPage,
+          })),
+      },
+    ]),
   },
 };
 

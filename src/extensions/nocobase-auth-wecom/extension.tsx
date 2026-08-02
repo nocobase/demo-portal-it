@@ -1,15 +1,11 @@
 import { lazy } from "react";
 import { Building2 } from "lucide-react";
-import { Route } from "react-router";
 
 import type { AppExtension } from "@nocobase/portal-sdk/extensions";
-import { AuthDemoRoute } from "@/components/auth/demo";
+import { defineAppRoutes } from "@nocobase/portal-sdk/routing";
 
 const WecomSignInButton = lazy(() => import("./wecom-sign-in-button"));
 const WecomAutoLoginProvider = lazy(() => import("./auto-login-provider"));
-const WecomAuthDemoPage = lazy(() =>
-  import("./demo").then((module) => ({ default: module.WecomAuthDemoPage }))
-);
 
 const wecomAuthExtension: AppExtension = {
   id: "nocobase-auth-wecom",
@@ -28,16 +24,16 @@ const wecomAuthExtension: AppExtension = {
         },
       },
     ],
-    routes: (
-      <Route
-        path="auth/wecom"
-        element={
-          <AuthDemoRoute>
-            <WecomAuthDemoPage />
-          </AuthDemoRoute>
-        }
-      />
-    ),
+    routes: defineAppRoutes([
+      {
+        name: "development.auth.wecom",
+        path: "auth/wecom",
+        lazy: () =>
+          import("./demo").then((module) => ({
+            default: module.WecomAuthDemoPage,
+          })),
+      },
+    ]),
   },
   authAdapters: [
     {

@@ -12,39 +12,9 @@ import {
   Wrench,
 } from "lucide-react";
 
-import { AccessDenied } from "@/components/access-control/access-denied";
-import { CanAccess } from "@/components/access-control/can-access";
-import { DashboardPage } from "@/pages/it/dashboard";
-import { AssetList } from "@/pages/it/assets/asset-list";
-import { AssetShow } from "@/pages/it/assets/asset-show";
-import { AssetCreate, AssetEdit } from "@/pages/it/assets/asset-form";
-import { AssignmentsOverview } from "@/pages/it/assignments";
-import { ServiceCatalog } from "@/pages/it/catalog";
-import { CatalogItemCreate, CatalogItemEdit } from "@/pages/it/catalog-form";
-import { RequestList } from "@/pages/it/requests/request-list";
-import { RequestShow } from "@/pages/it/requests/request-show";
-import { RequestCreate, RequestEdit } from "@/pages/it/requests/request-form";
-import {
-  FulfillmentBoard,
-  FulfillmentCreate,
-  FulfillmentEdit,
-  FulfillmentShow,
-} from "@/pages/it/fulfillment";
-import { RepairsBoard, RepairCreate, RepairEdit, RepairShow } from "@/pages/it/repairs";
-import { LicenseList } from "@/pages/it/licenses/license-list";
-import { LicenseCreate, LicenseEdit } from "@/pages/it/licenses/license-form";
-import { RunbookList } from "@/pages/it/knowledge/runbook-list";
-import { RunbookShow } from "@/pages/it/knowledge/runbook-show";
-import { RunbookCreate, RunbookEdit } from "@/pages/it/knowledge/runbook-form";
-import { ReportsPage } from "@/pages/it/reports";
+import { withCollectionAccess } from "@/pages/it/lazy-route";
 
 export const registryRoutesEnabled = false;
-
-const gate = (resource: string, action: string, node: React.ReactNode) => (
-  <CanAccess resource={resource} action={action} fallback={<AccessDenied />}>
-    {node}
-  </CanAccess>
-);
 
 const navMeta = (
   label: string,
@@ -67,29 +37,74 @@ export const appRoutes = defineAppRoutes([
   {
     name: "it-dashboard",
     path: "/dashboard",
-    element: <DashboardPage />,
+    lazy: () =>
+      import("@/pages/it/dashboard").then(({ DashboardPage }) => ({
+        default: DashboardPage,
+      })),
     resource: navMeta("Dashboard", "it.nav.dashboard", <LayoutDashboard />, 1),
   },
   {
     name: "it-assets",
     path: "/asset-register",
-    element: gate("it_assets", "list", <AssetList />),
+    lazy: withCollectionAccess(
+      () =>
+        import("@/pages/it/assets/asset-list").then(({ AssetList }) => ({
+          default: AssetList,
+        })),
+      "it_assets",
+      "list"
+    ),
     resource: navMeta("Assets", "it.nav.assets", <Boxes />, 2, "it_assets"),
     children: [
-      { name: "it-assets.create", path: "create", resourceAction: "create", element: gate("it_assets", "create", <AssetCreate />) },
+      {
+        name: "it-assets.create",
+        path: "create",
+        resourceAction: "create",
+        lazy: withCollectionAccess(
+          () =>
+            import("@/pages/it/assets/asset-form").then(({ AssetCreate }) => ({
+              default: AssetCreate,
+            })),
+          "it_assets",
+          "create"
+        ),
+      },
       {
         name: "it-assets.show",
         path: ":id",
-        element: gate("it_assets", "get", <AssetShow />),
+        lazy: withCollectionAccess(
+          () =>
+            import("@/pages/it/assets/asset-show").then(({ AssetShow }) => ({
+              default: AssetShow,
+            })),
+          "it_assets",
+          "get"
+        ),
         children: [
-          { name: "it-assets.edit", path: "edit", resourceAction: "edit", element: gate("it_assets", "update", <AssetEdit />) },
           {
-            // Nested one level deeper: a repair opened from within an asset's
-            // detail popup gets its own URL-addressable child route, reusing
-            // the same RepairShow surface as the canonical /repairs/:id.
+            name: "it-assets.edit",
+            path: "edit",
+            resourceAction: "edit",
+            lazy: withCollectionAccess(
+              () =>
+                import("@/pages/it/assets/asset-form").then(({ AssetEdit }) => ({
+                  default: AssetEdit,
+                })),
+              "it_assets",
+              "update"
+            ),
+          },
+          {
             name: "it-assets.show.repair",
             path: "repairs/:repairId",
-            element: gate("it_repairs", "get", <RepairShow />),
+            lazy: withCollectionAccess(
+              () =>
+                import("@/pages/it/repairs").then(({ RepairShow }) => ({
+                  default: RepairShow,
+                })),
+              "it_repairs",
+              "get"
+            ),
           },
         ],
       },
@@ -98,40 +113,119 @@ export const appRoutes = defineAppRoutes([
   {
     name: "it-assignments",
     path: "/assignments",
-    element: gate("it_assignments", "list", <AssignmentsOverview />),
+    lazy: withCollectionAccess(
+      () =>
+        import("@/pages/it/assignments").then(({ AssignmentsOverview }) => ({
+          default: AssignmentsOverview,
+        })),
+      "it_assignments",
+      "list"
+    ),
     resource: navMeta("Assignments", "it.nav.assignments", <Users />, 3, "it_assignments"),
   },
   {
     name: "it-catalog",
     path: "/catalog",
-    element: gate("it_request_types", "list", <ServiceCatalog />),
+    lazy: withCollectionAccess(
+      () =>
+        import("@/pages/it/catalog").then(({ ServiceCatalog }) => ({
+          default: ServiceCatalog,
+        })),
+      "it_request_types",
+      "list"
+    ),
     resource: navMeta("Service catalog", "it.nav.catalog", <LayoutGrid />, 4, "it_request_types"),
     children: [
-      { name: "it-catalog.create", path: "create", resourceAction: "create", element: gate("it_request_types", "create", <CatalogItemCreate />) },
-      { name: "it-catalog.edit", path: ":id/edit", resourceAction: "edit", element: gate("it_request_types", "update", <CatalogItemEdit />) },
+      {
+        name: "it-catalog.create",
+        path: "create",
+        resourceAction: "create",
+        lazy: withCollectionAccess(
+          () =>
+            import("@/pages/it/catalog-form").then(({ CatalogItemCreate }) => ({
+              default: CatalogItemCreate,
+            })),
+          "it_request_types",
+          "create"
+        ),
+      },
+      {
+        name: "it-catalog.edit",
+        path: ":id/edit",
+        resourceAction: "edit",
+        lazy: withCollectionAccess(
+          () =>
+            import("@/pages/it/catalog-form").then(({ CatalogItemEdit }) => ({
+              default: CatalogItemEdit,
+            })),
+          "it_request_types",
+          "update"
+        ),
+      },
     ],
   },
   {
     name: "it-requests",
     path: "/requests",
-    element: gate("it_requests", "list", <RequestList />),
+    lazy: withCollectionAccess(
+      () =>
+        import("@/pages/it/requests/request-list").then(({ RequestList }) => ({
+          default: RequestList,
+        })),
+      "it_requests",
+      "list"
+    ),
     resource: navMeta("Requests", "it.nav.requests", <ClipboardList />, 5, "it_requests"),
     children: [
-      { name: "it-requests.create", path: "new", resourceAction: "create", element: gate("it_requests", "create", <RequestCreate />) },
+      {
+        name: "it-requests.create",
+        path: "new",
+        resourceAction: "create",
+        lazy: withCollectionAccess(
+          () =>
+            import("@/pages/it/requests/request-form").then(({ RequestCreate }) => ({
+              default: RequestCreate,
+            })),
+          "it_requests",
+          "create"
+        ),
+      },
       {
         name: "it-requests.show",
         path: ":id",
-        element: gate("it_requests", "get", <RequestShow />),
+        lazy: withCollectionAccess(
+          () =>
+            import("@/pages/it/requests/request-show").then(({ RequestShow }) => ({
+              default: RequestShow,
+            })),
+          "it_requests",
+          "get"
+        ),
         children: [
-          { name: "it-requests.edit", path: "edit", resourceAction: "edit", element: gate("it_requests", "update", <RequestEdit />) },
           {
-            // Nested one level deeper: a fulfilment job opened from within a
-            // request's detail popup gets its own URL-addressable child
-            // route, reusing the same FulfillmentShow surface as the
-            // canonical /fulfillment/:id.
+            name: "it-requests.edit",
+            path: "edit",
+            resourceAction: "edit",
+            lazy: withCollectionAccess(
+              () =>
+                import("@/pages/it/requests/request-form").then(
+                  ({ RequestEdit }) => ({ default: RequestEdit })
+                ),
+              "it_requests",
+              "update"
+            ),
+          },
+          {
             name: "it-requests.show.job",
             path: "jobs/:jobId",
-            element: gate("it_fulfillment_jobs", "get", <FulfillmentShow />),
+            lazy: withCollectionAccess(
+              () =>
+                import("@/pages/it/fulfillment").then(
+                  ({ FulfillmentShow }) => ({ default: FulfillmentShow })
+                ),
+              "it_fulfillment_jobs",
+              "get"
+            ),
           },
         ],
       },
@@ -140,17 +234,55 @@ export const appRoutes = defineAppRoutes([
   {
     name: "it-fulfillment",
     path: "/fulfillment",
-    element: gate("it_fulfillment_jobs", "list", <FulfillmentBoard />),
+    lazy: withCollectionAccess(
+      () =>
+        import("@/pages/it/fulfillment").then(({ FulfillmentBoard }) => ({
+          default: FulfillmentBoard,
+        })),
+      "it_fulfillment_jobs",
+      "list"
+    ),
     resource: navMeta("Fulfillment", "it.nav.fulfillment", <ListChecks />, 6, "it_fulfillment_jobs"),
     children: [
-      { name: "it-fulfillment.create", path: "create", resourceAction: "create", element: gate("it_fulfillment_jobs", "create", <FulfillmentCreate />) },
+      {
+        name: "it-fulfillment.create",
+        path: "create",
+        resourceAction: "create",
+        lazy: withCollectionAccess(
+          () =>
+            import("@/pages/it/fulfillment").then(({ FulfillmentCreate }) => ({
+              default: FulfillmentCreate,
+            })),
+          "it_fulfillment_jobs",
+          "create"
+        ),
+      },
       {
         name: "it-fulfillment.show",
         path: ":id",
         resourceAction: "show",
-        element: gate("it_fulfillment_jobs", "get", <FulfillmentShow />),
+        lazy: withCollectionAccess(
+          () =>
+            import("@/pages/it/fulfillment").then(({ FulfillmentShow }) => ({
+              default: FulfillmentShow,
+            })),
+          "it_fulfillment_jobs",
+          "get"
+        ),
         children: [
-          { name: "it-fulfillment.edit", path: "edit", resourceAction: "edit", element: gate("it_fulfillment_jobs", "update", <FulfillmentEdit />) },
+          {
+            name: "it-fulfillment.edit",
+            path: "edit",
+            resourceAction: "edit",
+            lazy: withCollectionAccess(
+              () =>
+                import("@/pages/it/fulfillment").then(({ FulfillmentEdit }) => ({
+                  default: FulfillmentEdit,
+                })),
+              "it_fulfillment_jobs",
+              "update"
+            ),
+          },
         ],
       },
     ],
@@ -158,17 +290,55 @@ export const appRoutes = defineAppRoutes([
   {
     name: "it-repairs",
     path: "/repairs",
-    element: gate("it_repairs", "list", <RepairsBoard />),
+    lazy: withCollectionAccess(
+      () =>
+        import("@/pages/it/repairs").then(({ RepairsBoard }) => ({
+          default: RepairsBoard,
+        })),
+      "it_repairs",
+      "list"
+    ),
     resource: navMeta("Repairs", "it.nav.repairs", <Wrench />, 7, "it_repairs"),
     children: [
-      { name: "it-repairs.create", path: "create", resourceAction: "create", element: gate("it_repairs", "create", <RepairCreate />) },
+      {
+        name: "it-repairs.create",
+        path: "create",
+        resourceAction: "create",
+        lazy: withCollectionAccess(
+          () =>
+            import("@/pages/it/repairs").then(({ RepairCreate }) => ({
+              default: RepairCreate,
+            })),
+          "it_repairs",
+          "create"
+        ),
+      },
       {
         name: "it-repairs.show",
         path: ":id",
         resourceAction: "show",
-        element: gate("it_repairs", "get", <RepairShow />),
+        lazy: withCollectionAccess(
+          () =>
+            import("@/pages/it/repairs").then(({ RepairShow }) => ({
+              default: RepairShow,
+            })),
+          "it_repairs",
+          "get"
+        ),
         children: [
-          { name: "it-repairs.edit", path: "edit", resourceAction: "edit", element: gate("it_repairs", "update", <RepairEdit />) },
+          {
+            name: "it-repairs.edit",
+            path: "edit",
+            resourceAction: "edit",
+            lazy: withCollectionAccess(
+              () =>
+                import("@/pages/it/repairs").then(({ RepairEdit }) => ({
+                  default: RepairEdit,
+                })),
+              "it_repairs",
+              "update"
+            ),
+          },
         ],
       },
     ],
@@ -176,26 +346,95 @@ export const appRoutes = defineAppRoutes([
   {
     name: "it-licenses",
     path: "/licenses",
-    element: gate("it_licenses", "list", <LicenseList />),
+    lazy: withCollectionAccess(
+      () =>
+        import("@/pages/it/licenses/license-list").then(({ LicenseList }) => ({
+          default: LicenseList,
+        })),
+      "it_licenses",
+      "list"
+    ),
     resource: navMeta("Licenses", "it.nav.licenses", <ShieldCheck />, 8, "it_licenses"),
     children: [
-      { name: "it-licenses.create", path: "create", resourceAction: "create", element: gate("it_licenses", "create", <LicenseCreate />) },
-      { name: "it-licenses.edit", path: ":id/edit", resourceAction: "edit", element: gate("it_licenses", "update", <LicenseEdit />) },
+      {
+        name: "it-licenses.create",
+        path: "create",
+        resourceAction: "create",
+        lazy: withCollectionAccess(
+          () =>
+            import("@/pages/it/licenses/license-form").then(({ LicenseCreate }) => ({
+              default: LicenseCreate,
+            })),
+          "it_licenses",
+          "create"
+        ),
+      },
+      {
+        name: "it-licenses.edit",
+        path: ":id/edit",
+        resourceAction: "edit",
+        lazy: withCollectionAccess(
+          () =>
+            import("@/pages/it/licenses/license-form").then(({ LicenseEdit }) => ({
+              default: LicenseEdit,
+            })),
+          "it_licenses",
+          "update"
+        ),
+      },
     ],
   },
   {
     name: "it-knowledge",
     path: "/knowledge",
-    element: gate("it_runbooks", "list", <RunbookList />),
+    lazy: withCollectionAccess(
+      () =>
+        import("@/pages/it/knowledge/runbook-list").then(({ RunbookList }) => ({
+          default: RunbookList,
+        })),
+      "it_runbooks",
+      "list"
+    ),
     resource: navMeta("Runbooks", "it.nav.knowledge", <BookOpen />, 9, "it_runbooks"),
     children: [
-      { name: "it-knowledge.create", path: "create", resourceAction: "create", element: gate("it_runbooks", "create", <RunbookCreate />) },
+      {
+        name: "it-knowledge.create",
+        path: "create",
+        resourceAction: "create",
+        lazy: withCollectionAccess(
+          () =>
+            import("@/pages/it/knowledge/runbook-form").then(
+              ({ RunbookCreate }) => ({ default: RunbookCreate })
+            ),
+          "it_runbooks",
+          "create"
+        ),
+      },
       {
         name: "it-knowledge.show",
         path: ":id",
-        element: gate("it_runbooks", "get", <RunbookShow />),
+        lazy: withCollectionAccess(
+          () =>
+            import("@/pages/it/knowledge/runbook-show").then(({ RunbookShow }) => ({
+              default: RunbookShow,
+            })),
+          "it_runbooks",
+          "get"
+        ),
         children: [
-          { name: "it-knowledge.edit", path: "edit", resourceAction: "edit", element: gate("it_runbooks", "update", <RunbookEdit />) },
+          {
+            name: "it-knowledge.edit",
+            path: "edit",
+            resourceAction: "edit",
+            lazy: withCollectionAccess(
+              () =>
+                import("@/pages/it/knowledge/runbook-form").then(
+                  ({ RunbookEdit }) => ({ default: RunbookEdit })
+                ),
+              "it_runbooks",
+              "update"
+            ),
+          },
         ],
       },
     ],
@@ -203,7 +442,10 @@ export const appRoutes = defineAppRoutes([
   {
     name: "it-reports",
     path: "/reports",
-    element: <ReportsPage />,
+    lazy: () =>
+      import("@/pages/it/reports").then(({ ReportsPage }) => ({
+        default: ReportsPage,
+      })),
     resource: navMeta("Reports", "it.nav.reports", <BarChart3 />, 10),
   },
 ]);

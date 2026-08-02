@@ -1,17 +1,11 @@
 import { lazy } from "react";
 import { MessageSquare } from "lucide-react";
-import { Route } from "react-router";
 
 import type { AppExtension } from "@nocobase/portal-sdk/extensions";
-import { AuthDemoRoute } from "@/components/auth/demo";
+import { defineAppRoutes } from "@nocobase/portal-sdk/routing";
 
 const DingtalkSignInButton = lazy(() => import("./dingtalk-sign-in-button"));
 const DingtalkAutoLoginProvider = lazy(() => import("./auto-login-provider"));
-const DingtalkAuthDemoPage = lazy(() =>
-  import("./demo").then((module) => ({
-    default: module.DingtalkAuthDemoPage,
-  }))
-);
 
 const dingtalkAuthExtension: AppExtension = {
   id: "nocobase-auth-dingtalk",
@@ -30,16 +24,16 @@ const dingtalkAuthExtension: AppExtension = {
         },
       },
     ],
-    routes: (
-      <Route
-        path="auth/dingtalk"
-        element={
-          <AuthDemoRoute>
-            <DingtalkAuthDemoPage />
-          </AuthDemoRoute>
-        }
-      />
-    ),
+    routes: defineAppRoutes([
+      {
+        name: "development.auth.dingtalk",
+        path: "auth/dingtalk",
+        lazy: () =>
+          import("./demo").then((module) => ({
+            default: module.DingtalkAuthDemoPage,
+          })),
+      },
+    ]),
   },
   authAdapters: [
     {

@@ -1,14 +1,10 @@
 import { lazy } from "react";
 import { KeyRound } from "lucide-react";
-import { Route } from "react-router";
 
 import type { AppExtension } from "@nocobase/portal-sdk/extensions";
-import { AuthDemoRoute } from "@/components/auth/demo";
+import { defineAppRoutes } from "@nocobase/portal-sdk/routing";
 
 const CasSignInButton = lazy(() => import("./cas-sign-in-button"));
-const CasAuthDemoPage = lazy(() =>
-  import("./demo").then((module) => ({ default: module.CasAuthDemoPage }))
-);
 
 const casAuthExtension: AppExtension = {
   id: "nocobase-auth-cas",
@@ -25,16 +21,16 @@ const casAuthExtension: AppExtension = {
         },
       },
     ],
-    routes: (
-      <Route
-        path="auth/cas"
-        element={
-          <AuthDemoRoute>
-            <CasAuthDemoPage />
-          </AuthDemoRoute>
-        }
-      />
-    ),
+    routes: defineAppRoutes([
+      {
+        name: "development.auth.cas",
+        path: "auth/cas",
+        lazy: () =>
+          import("./demo").then((module) => ({
+            default: module.CasAuthDemoPage,
+          })),
+      },
+    ]),
   },
   authAdapters: [
     {

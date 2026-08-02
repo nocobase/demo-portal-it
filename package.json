@@ -6,10 +6,10 @@
   "packageManager": "pnpm@10.28.0",
   "type": "module",
   "nocobase": {
-    "defaultTemplateVersion": "2.0.1"
+    "defaultTemplateVersion": "3.0.1"
   },
   "dependencies": {
-    "@nocobase/portal-sdk": "^1.0.0"
+    "@nocobase/portal-sdk": "^2.0.0"
   },
   "devDependencies": {
     "@ai-sdk/react": "2.0.0",

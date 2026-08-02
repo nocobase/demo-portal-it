@@ -1,14 +1,10 @@
 import { lazy } from "react";
 import { Smartphone } from "lucide-react";
-import { Route } from "react-router";
 
 import type { AppExtension } from "@nocobase/portal-sdk/extensions";
-import { AuthDemoRoute } from "@/components/auth/demo/auth-demo-route";
+import { defineAppRoutes } from "@nocobase/portal-sdk/routing";
 
 const SmsSignInForm = lazy(() => import("./sms-sign-in-form"));
-const SmsAuthDemoPage = lazy(() =>
-  import("./demo").then((module) => ({ default: module.SmsAuthDemoPage }))
-);
 
 const smsAuthExtension: AppExtension = {
   id: "nocobase-auth-sms",
@@ -25,16 +21,16 @@ const smsAuthExtension: AppExtension = {
         },
       },
     ],
-    routes: (
-      <Route
-        path="auth/sms"
-        element={
-          <AuthDemoRoute>
-            <SmsAuthDemoPage />
-          </AuthDemoRoute>
-        }
-      />
-    ),
+    routes: defineAppRoutes([
+      {
+        name: "development.auth.sms",
+        path: "auth/sms",
+        lazy: () =>
+          import("./demo").then((module) => ({
+            default: module.SmsAuthDemoPage,
+          })),
+      },
+    ]),
   },
   authAdapters: [
     {

@@ -1,15 +1,11 @@
 import { lazy } from "react";
 import { LogIn } from "lucide-react";
-import { Route } from "react-router";
 
 import type { AppExtension } from "@nocobase/portal-sdk/extensions";
-import { AuthDemoRoute } from "@/components/auth/demo";
+import { defineAppRoutes } from "@nocobase/portal-sdk/routing";
 
 const OidcSignInButton = lazy(() => import("./oidc-sign-in-button"));
 const OidcAutoRedirectProvider = lazy(() => import("./auto-redirect-provider"));
-const OidcAuthDemoPage = lazy(() =>
-  import("./demo").then((module) => ({ default: module.OidcAuthDemoPage }))
-);
 
 const oidcAuthExtension: AppExtension = {
   id: "nocobase-auth-oidc",
@@ -28,16 +24,16 @@ const oidcAuthExtension: AppExtension = {
         },
       },
     ],
-    routes: (
-      <Route
-        path="auth/oidc"
-        element={
-          <AuthDemoRoute>
-            <OidcAuthDemoPage />
-          </AuthDemoRoute>
-        }
-      />
-    ),
+    routes: defineAppRoutes([
+      {
+        name: "development.auth.oidc",
+        path: "auth/oidc",
+        lazy: () =>
+          import("./demo").then((module) => ({
+            default: module.OidcAuthDemoPage,
+          })),
+      },
+    ]),
   },
   authAdapters: [
     {
