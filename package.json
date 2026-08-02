@@ -5,10 +5,10 @@
   "private": true,
   "type": "module",
   "nocobase": {
-    "defaultTemplateVersion": "3.0.1"
+    "defaultTemplateVersion": "3.0.2"
   },
   "dependencies": {
-    "@nocobase/portal-sdk": "^2.0.0"
+    "@nocobase/portal-sdk": "^2.0.1"
   },
   "devDependencies": {
     "@ai-sdk/react": "2.0.0",
