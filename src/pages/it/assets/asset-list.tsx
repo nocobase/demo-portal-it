@@ -1,7 +1,6 @@
 import { useList, useTranslate, type CrudFilters } from "@refinedev/core";
 import { Boxes, Plus, Search } from "lucide-react";
 import { useMemo, useState } from "react";
-import { Outlet } from "react-router";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -204,7 +203,6 @@ export function AssetList() {
       </div>
 
       <ListPagination {...pagination} total={total} />
-      <Outlet />
     </div>
   );
 }

@@ -1,7 +1,6 @@
 import { useList, useTranslate } from "@refinedev/core";
 import { AlertTriangle, KeyRound, Plus } from "lucide-react";
 import { useMemo, useState } from "react";
-import { Outlet } from "react-router";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -265,7 +264,6 @@ export function LicenseList() {
       </div>
 
       <ListPagination {...pagination} total={filtered.length} />
-      <Outlet />
     </div>
   );
 }

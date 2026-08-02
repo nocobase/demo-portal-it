@@ -1,7 +1,6 @@
 import { useList, useTranslate, type CrudFilters } from "@refinedev/core";
 import { CheckCircle2, ClipboardList, Loader2, Plus, Search, ThumbsUp } from "lucide-react";
 import { useMemo, useState } from "react";
-import { Outlet } from "react-router";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -264,7 +263,6 @@ export function RequestList() {
       </div>
 
       <ListPagination {...pagination} total={total} />
-      <Outlet />
     </div>
   );
 }

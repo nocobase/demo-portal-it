@@ -18,7 +18,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { useMemo, useState } from "react";
-import { Outlet, useNavigate } from "react-router";
+import { useNavigate } from "react-router";
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -121,7 +121,6 @@ export function ServiceCatalog() {
           ))}
         </div>
       )}
-      <Outlet />
     </div>
   );
 }

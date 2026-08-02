@@ -12,7 +12,6 @@ import { useWarnAboutChange } from "@refinedev/core";
 import { Pencil, Plus } from "lucide-react";
 import { useState, type DragEvent, type FormEvent } from "react";
 import { useNavigate, useOutlet, useParams } from "react-router";
-import { Outlet } from "react-router";
 
 import { LoadingState } from "@/components/app-shell/loading-state";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -185,7 +184,6 @@ export function RepairsBoard() {
           />
         ))}
       </div>
-      <Outlet />
     </div>
   );
 }
