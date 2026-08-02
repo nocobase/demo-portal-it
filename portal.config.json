@@ -1,8 +1,3 @@
 {
-  "sourceStorage": "git",
-  "git": {
-    "repo": "https://github.com/nocobase/demo-portal-it.git",
-    "branch": "main",
-    "path": "."
-  }
+  "sourceStorage": "nocobase"
 }
