@@ -1,3 +1,4 @@
+import { useTranslate } from "@refinedev/core";
 import { useState } from "react";
 
 import type { AuthenticatorComponentProps } from "@nocobase/portal-sdk/auth";
@@ -22,6 +23,7 @@ export default function SmsSignInForm({
 }) {
   const [phone, setPhone] = useState("");
   const [code, setCode] = useState("");
+  const translate = useTranslate();
   const sms = useSmsSignIn(authenticator);
   const autoSignup = authenticator.options?.autoSignup === true;
 
@@ -39,12 +41,14 @@ export default function SmsSignInForm({
     >
       {sms.error && (
         <Alert variant="destructive">
-          <AlertTitle>SMS sign-in failed</AlertTitle>
+          <AlertTitle>{translate("auth.sms.failed", "SMS sign-in failed")}</AlertTitle>
           <AlertDescription>{sms.error.message}</AlertDescription>
         </Alert>
       )}
       <div className="space-y-2">
-        <Label htmlFor={`${authenticator.name}-phone`}>Phone</Label>
+        <Label htmlFor={`${authenticator.name}-phone`}>
+          {translate("auth.field.phone", "Phone")}
+        </Label>
         <Input
           id={`${authenticator.name}-phone`}
           type="tel"
@@ -56,7 +60,7 @@ export default function SmsSignInForm({
       </div>
       <div className="space-y-2">
         <Label htmlFor={`${authenticator.name}-code`}>
-          Verification code
+          {translate("auth.field.verificationCode", "Verification code")}
         </Label>
         <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-2">
           <Input

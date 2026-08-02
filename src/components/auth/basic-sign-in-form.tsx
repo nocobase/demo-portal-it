@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useLink, useLogin } from "@refinedev/core";
+import { useLink, useLogin, useTranslate } from "@refinedev/core";
 import type { AuthenticatorComponentProps } from "@nocobase/portal-sdk/auth";
 
 import { InputPassword } from "@/components/auth/input-password";
@@ -18,6 +18,7 @@ type LoginVariables = {
 export function BasicSignInForm({
   authenticator,
 }: AuthenticatorComponentProps) {
+  const translate = useTranslate();
   const [account, setAccount] = useState("");
   const [password, setPassword] = useState("");
   const Link = useLink();
@@ -35,7 +36,7 @@ export function BasicSignInForm({
     <form onSubmit={handleSignIn} className="space-y-5">
       <div className="space-y-2">
         <Label htmlFor={`${authenticator.name}-account`}>
-          Username or email
+          {translate("auth.field.account", "Username or email")}
         </Label>
         <Input
           id={`${authenticator.name}-account`}
@@ -49,7 +50,9 @@ export function BasicSignInForm({
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor={`${authenticator.name}-password`}>Password</Label>
+        <Label htmlFor={`${authenticator.name}-password`}>
+          {translate("auth.field.password", "Password")}
+        </Label>
         <InputPassword
           id={`${authenticator.name}-password`}
           value={password}
@@ -64,7 +67,9 @@ export function BasicSignInForm({
         className="w-full"
         disabled={isPending}
       >
-        {isPending ? "Signing in…" : "Sign in"}
+        {isPending
+          ? translate("auth.action.signingIn", "Signing in\u2026")
+          : translate("auth.action.signIn", "Sign in")}
       </Button>
 
       {(allowSignUp || enableResetPassword) && (
@@ -76,7 +81,7 @@ export function BasicSignInForm({
               )}`}
               className="transition-colors hover:text-foreground hover:underline hover:underline-offset-4"
             >
-              Forgot password?
+              {translate("auth.action.forgotPassword", "Forgot password?")}
             </Link>
           ) : (
             <span />

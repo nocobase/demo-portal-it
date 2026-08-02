@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/tooltip";
 import { resolveTranslatableText } from "@nocobase/portal-sdk/i18n";
 
+import { useTranslate } from "@refinedev/core";
 import { useWecomSignIn } from "./use-wecom-sign-in";
 
 function plainText(value: unknown) {
@@ -26,6 +27,7 @@ export default function WecomSignInButton({
   authenticator,
   onSignIn,
 }: AuthenticatorComponentProps & { onSignIn?: () => void }) {
+  const translate = useTranslate();
   const { signIn, isPending, error } = useWecomSignIn(authenticator);
   const tooltip = plainText(authenticator.options?.btnTooltip);
   const button = (
@@ -51,7 +53,7 @@ export default function WecomSignInButton({
     <div className="space-y-3">
       {error && (
         <Alert variant="destructive">
-          <AlertTitle>WeCom sign-in failed</AlertTitle>
+          <AlertTitle>{translate("auth.wecom.failed", "WeCom sign-in failed")}</AlertTitle>
           <AlertDescription>{error.message}</AlertDescription>
         </Alert>
       )}

@@ -9,18 +9,20 @@ import {
 import { Button } from "@/components/ui/button";
 import { resolveTranslatableText } from "@nocobase/portal-sdk/i18n";
 
+import { useTranslate } from "@refinedev/core";
 import { useDingtalkSignIn } from "./use-dingtalk-sign-in";
 
 export default function DingtalkSignInButton({
   authenticator,
   onSignIn,
 }: AuthenticatorComponentProps & { onSignIn?: () => void }) {
+  const translate = useTranslate();
   const { signIn, isPending, error } = useDingtalkSignIn(authenticator);
   return (
     <div className="space-y-3">
       {error && (
         <Alert variant="destructive">
-          <AlertTitle>DingTalk sign-in failed</AlertTitle>
+          <AlertTitle>{translate("auth.dingtalk.failed", "DingTalk sign-in failed")}</AlertTitle>
           <AlertDescription>{error.message}</AlertDescription>
         </Alert>
       )}

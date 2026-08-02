@@ -1,3 +1,4 @@
+import { useTranslate } from "@refinedev/core";
 import { AlertCircle, KeyRound } from "lucide-react";
 import { Fragment, Suspense, useEffect, useMemo } from "react";
 import {
@@ -45,6 +46,7 @@ function AuthenticatorFallback() {
 export function DynamicSignIn({
   renderAuthenticator,
 }: DynamicSignInProps) {
+  const translate = useTranslate();
   const { data: authenticators = [], error, isPending } =
     usePublicAuthenticators();
 
@@ -107,7 +109,9 @@ export function DynamicSignIn({
     return (
       <Alert variant="destructive">
         <AlertCircle />
-        <AlertTitle>Unable to load sign-in methods</AlertTitle>
+        <AlertTitle>
+          {translate("auth.signIn.errorTitle", "Unable to load sign-in methods")}
+        </AlertTitle>
         <AlertDescription>
           {import.meta.env.DEV && error instanceof Error
             ? error.message
@@ -127,7 +131,9 @@ export function DynamicSignIn({
           <EmptyMedia variant="icon">
             <KeyRound />
           </EmptyMedia>
-          <EmptyTitle>No supported sign-in methods</EmptyTitle>
+          <EmptyTitle>
+            {translate("auth.signIn.noMethods", "No supported sign-in methods")}
+          </EmptyTitle>
           <EmptyDescription>
             No sign-in method is currently available. Contact your
             administrator for access.
@@ -174,7 +180,7 @@ export function DynamicSignIn({
             <div className="flex items-center gap-4 py-1">
               <Separator className="flex-1" />
               <span className="text-xs text-muted-foreground">
-                Or continue with
+                {translate("auth.signIn.orContinueWith", "Or continue with")}
               </span>
               <Separator className="flex-1" />
             </div>

@@ -1,4 +1,4 @@
-import { useGetIdentity } from "@refinedev/core";
+import { useGetIdentity, useTranslate } from "@refinedev/core";
 import { Loader2, ShieldCheck } from "lucide-react";
 import { useMemo, useState, type ReactNode } from "react";
 
@@ -33,6 +33,7 @@ export function RoleSwitcher({
   label = "Switch role",
   showWhenUnavailable = false,
 }: RoleSwitcherProps) {
+  const translate = useTranslate();
   const { data: identity, isLoading } = useGetIdentity<AclIdentity>();
   const acl = useAclState();
   const [switching, setSwitching] = useState(false);
@@ -95,7 +96,7 @@ export function RoleSwitcher({
       >
         <SelectTrigger
           className={cn("w-full min-w-52", triggerClassName)}
-          aria-label="Switch role"
+          aria-label={translate("acl.switchRole", "Switch role")}
         >
           {switching ? <Loader2 className="animate-spin" /> : <ShieldCheck />}
           <SelectValue>{getRoleTitle(roles, currentRole)}</SelectValue>

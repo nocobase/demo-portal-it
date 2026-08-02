@@ -1,3 +1,4 @@
+import { useTranslate } from "@refinedev/core";
 import type { RenderAuthenticator } from "@nocobase/portal-sdk/auth";
 
 import { AuthLayout } from "@/components/auth/auth-layout";
@@ -10,10 +11,14 @@ type DefaultSignInPageProps = {
 export function DefaultSignInPage({
   renderAuthenticator,
 }: DefaultSignInPageProps) {
+  const translate = useTranslate();
   return (
     <AuthLayout
-      title="Welcome back"
-      description="Choose a sign-in method configured in NocoBase."
+      title={translate("auth.signIn.title", "Welcome back")}
+      description={translate(
+        "auth.signIn.description",
+        "Choose a sign-in method configured in NocoBase."
+      )}
     >
       <DynamicSignIn renderAuthenticator={renderAuthenticator} />
     </AuthLayout>

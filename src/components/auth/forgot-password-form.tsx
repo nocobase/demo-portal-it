@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { ArrowLeft } from "lucide-react";
-import { useForgotPassword, useLink } from "@refinedev/core";
+import { useForgotPassword, useLink, useTranslate } from "@refinedev/core";
 import { useSearchParams } from "react-router";
 
 import { AuthLayout } from "@/components/auth/auth-layout";
@@ -14,6 +14,7 @@ export const ForgotPasswordForm = () => {
   const [email, setEmail] = useState("");
   const Link = useLink();
   const [searchParams] = useSearchParams();
+  const translate = useTranslate();
   const { mutate: forgotPassword, isPending } = useForgotPassword();
 
   const handleForgotPassword = (event: React.FormEvent<HTMLFormElement>) => {
@@ -26,15 +27,18 @@ export const ForgotPasswordForm = () => {
 
   return (
     <AuthLayout
-      title="Forgot password"
-      description="Enter your email to reset your password."
+      title={translate("auth.forgotPassword.title", "Forgot password")}
+      description={translate(
+        "auth.forgotPassword.description",
+        "Enter your email to reset your password."
+      )}
       footer={
         <Link
           to="/login"
           className="inline-flex items-center gap-2 text-muted-foreground transition-colors hover:text-foreground"
         >
           <ArrowLeft className="size-4" />
-          Back to sign in
+          {translate("auth.action.backToSignIn", "Back to sign in")}
         </Link>
       }
     >

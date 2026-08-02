@@ -1,5 +1,6 @@
 import * as React from "react"
 
+import { useTranslate } from "@refinedev/core"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { ChevronLeftIcon, ChevronRightIcon, MoreHorizontalIcon } from "lucide-react"
@@ -67,9 +68,10 @@ function PaginationPrevious({
   text = "Previous",
   ...props
 }: React.ComponentProps<typeof PaginationLink> & { text?: string }) {
+  const translate = useTranslate()
   return (
     <PaginationLink
-      aria-label="Go to previous page"
+      aria-label={translate("ui.pagination.previousPage", "Go to previous page")}
       size="default"
       className={cn("pl-1.5!", className)}
       {...props}
@@ -85,9 +87,10 @@ function PaginationNext({
   text = "Next",
   ...props
 }: React.ComponentProps<typeof PaginationLink> & { text?: string }) {
+  const translate = useTranslate()
   return (
     <PaginationLink
-      aria-label="Go to next page"
+      aria-label={translate("ui.pagination.nextPage", "Go to next page")}
       size="default"
       className={cn("pr-1.5!", className)}
       {...props}
@@ -102,6 +105,7 @@ function PaginationEllipsis({
   className,
   ...props
 }: React.ComponentProps<"span">) {
+  const translate = useTranslate()
   return (
     <span
       aria-hidden
@@ -114,7 +118,7 @@ function PaginationEllipsis({
     >
       <MoreHorizontalIcon
       />
-      <span className="sr-only">More pages</span>
+      <span className="sr-only">{translate("ui.pagination.morePages", "More pages")}</span>
     </span>
   )
 }

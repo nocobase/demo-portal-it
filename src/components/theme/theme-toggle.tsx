@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslate } from "@refinedev/core";
+
 import { useTheme } from "@/components/theme/theme-provider";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -11,6 +13,7 @@ type ThemeToggleProps = {
 
 export function ThemeToggle({ className }: ThemeToggleProps) {
   const { theme, setTheme } = useTheme();
+  const translate = useTranslate();
 
   const toggleTheme = () => setTheme(theme === "dark" ? "light" : "dark");
 
@@ -57,7 +60,9 @@ export function ThemeToggle({ className }: ThemeToggleProps) {
         )}
       />
       <span className="sr-only">
-        Switch to {theme === "dark" ? "light" : "dark"} mode
+        {theme === "dark"
+          ? translate("theme.switchToLight", "Switch to light mode")
+          : translate("theme.switchToDark", "Switch to dark mode")}
       </span>
     </Button>
   );

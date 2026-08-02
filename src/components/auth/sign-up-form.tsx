@@ -2,7 +2,7 @@
 
 import { AlertCircle, KeyRound } from "lucide-react";
 import { useState } from "react";
-import { useLink, useNotification, useRegister } from "@refinedev/core";
+import { useLink, useNotification, useRegister, useTranslate } from "@refinedev/core";
 import {
   usePublicAuthenticators,
   type Authenticator,
@@ -168,6 +168,7 @@ function BasicSignUpForm({ authenticator }: { authenticator: Authenticator }) {
   const [values, setValues] = useState<SignUpValues>({});
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const translate = useTranslate();
   const { open } = useNotification();
   const Link = useLink();
   const { mutate: register, isPending } = useRegister<SignUpVariables>();
@@ -238,7 +239,7 @@ function BasicSignUpForm({ authenticator }: { authenticator: Authenticator }) {
 
       <div className="space-y-2">
         <Label htmlFor={`${authenticator.name}-confirm-password`}>
-          Confirm password
+          {translate("auth.field.confirmPassword", "Confirm password")}
         </Label>
         <InputPassword
           id={`${authenticator.name}-confirm-password`}
@@ -254,12 +255,12 @@ function BasicSignUpForm({ authenticator }: { authenticator: Authenticator }) {
       </Button>
 
       <p className="text-center text-sm text-muted-foreground">
-        Have an account?{" "}
+        {translate("auth.signUp.haveAccount", "Have an account?")}{" "}
         <Link
           to="/login"
           className="font-semibold text-foreground underline underline-offset-4"
         >
-          Sign in
+          {translate("auth.action.signIn", "Sign in")}
         </Link>
       </p>
     </form>
@@ -267,6 +268,7 @@ function BasicSignUpForm({ authenticator }: { authenticator: Authenticator }) {
 }
 
 export const SignUpForm = () => {
+  const translate = useTranslate();
   const [searchParams] = useSearchParams();
   const { data: authenticators = [], error, isPending } =
     usePublicAuthenticators();
@@ -277,7 +279,7 @@ export const SignUpForm = () => {
 
   return (
     <AuthLayout
-      title="Create your account"
+      title={translate("auth.signUp.title", "Create your account")}
       description="Create your NocoBase account."
     >
       {isPending ? (
@@ -287,7 +289,9 @@ export const SignUpForm = () => {
       ) : error ? (
         <Alert variant="destructive">
           <AlertCircle />
-          <AlertTitle>Unable to load the sign-up method</AlertTitle>
+          <AlertTitle>
+            {translate("auth.signUp.errorTitle", "Unable to load the sign-up method")}
+          </AlertTitle>
           <AlertDescription>
             {import.meta.env.DEV && error instanceof Error
               ? error.message
@@ -300,7 +304,9 @@ export const SignUpForm = () => {
             <EmptyMedia variant="icon">
               <KeyRound />
             </EmptyMedia>
-            <EmptyTitle>No sign-up method available</EmptyTitle>
+            <EmptyTitle>
+              {translate("auth.signUp.noMethod", "No sign-up method available")}
+            </EmptyTitle>
             <EmptyDescription>
               This sign-up link is invalid or the authentication method does
               not support account registration.
@@ -313,9 +319,11 @@ export const SignUpForm = () => {
             <EmptyMedia variant="icon">
               <KeyRound />
             </EmptyMedia>
-            <EmptyTitle>Account registration is disabled</EmptyTitle>
+            <EmptyTitle>
+              {translate("auth.signUp.disabled", "Account registration is disabled")}
+            </EmptyTitle>
             <EmptyDescription>
-              Contact your administrator if you need an account.
+              {translate("auth.signUp.disabledHint", "Contact your administrator if you need an account.")}
             </EmptyDescription>
           </EmptyHeader>
         </Empty>
