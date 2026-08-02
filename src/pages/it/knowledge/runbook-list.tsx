@@ -1,4 +1,4 @@
-import { useList, useTranslate } from "@refinedev/core";
+import { useList, useTranslate, type CrudFilters } from "@refinedev/core";
 import { BookOpen, Eye, Plus, Search } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Outlet } from "react-router";
@@ -13,9 +13,19 @@ import {
   ValuePill,
   formatDate,
   tt,
+  useDimensionCounts,
   type RunbookRecord,
 } from "../lib";
+import {
+  ListPagination,
+  useDebouncedValue,
+  useListPagination,
+} from "../pagination";
 import { useOpenContextualChild } from "../route-surfaces";
+
+// Runbooks with no category group under this chip; it doubles as the sentinel
+// the server filter turns into an "is null" predicate.
+const UNCATEGORIZED = "—";
 
 export function RunbookList() {
   const translate = useTranslate();
@@ -23,30 +33,60 @@ export function RunbookList() {
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
 
+  const searchTerm = useDebouncedValue(search.trim());
+  const pagination = useListPagination(`${categoryFilter}|${searchTerm}`);
+
+  const searchFilters = useMemo<CrudFilters>(
+    () =>
+      searchTerm
+        ? [
+            {
+              operator: "or",
+              value: [
+                { field: "title", operator: "contains", value: searchTerm },
+                { field: "tags", operator: "contains", value: searchTerm },
+                { field: "summary", operator: "contains", value: searchTerm },
+              ],
+            },
+          ]
+        : [],
+    [searchTerm]
+  );
+
+  const filters = useMemo<CrudFilters>(() => {
+    if (categoryFilter === "all") return searchFilters;
+    return [
+      ...searchFilters,
+      categoryFilter === UNCATEGORIZED
+        ? { field: "category", operator: "eq", value: null }
+        : { field: "category", operator: "eq", value: categoryFilter },
+    ];
+  }, [searchFilters, categoryFilter]);
+
   const { result, query } = useList<RunbookRecord>({
     resource: "it_runbooks",
-    pagination: { mode: "server", currentPage: 1, pageSize: 200 },
+    pagination: {
+      mode: "server",
+      currentPage: pagination.currentPage,
+      pageSize: pagination.pageSize,
+    },
+    filters,
     sorters: [{ field: "title", order: "asc" }],
     queryOptions: { retry: false },
   });
 
   const rows = result.data;
+  const total = result.total;
 
-  const categories = useMemo(() => {
-    const c: Record<string, number> = {};
-    for (const r of rows) {
-      const key = r.category ?? "—";
-      c[key] = (c[key] ?? 0) + 1;
-    }
-    return c;
-  }, [rows]);
-
-  const filtered = rows.filter((r) => {
-    if (categoryFilter !== "all" && (r.category ?? "—") !== categoryFilter) return false;
-    if (!search) return true;
-    const q = search.toLowerCase();
-    return [r.title, r.tags, r.summary].filter(Boolean).some((v) => String(v).toLowerCase().includes(q));
-  });
+  // Chips come from a server-side grouped count, so every category stays
+  // listed even when its runbooks sit on another page.
+  // it_runbooks declares no "id" field, so the count measure targets "title".
+  const { counts: categories, total: matchingTotal } = useDimensionCounts(
+    "it_runbooks",
+    "category",
+    searchFilters,
+    "title"
+  );
 
   return (
     <div className="flex flex-col gap-6">
@@ -76,7 +116,7 @@ export function RunbookList() {
             active={categoryFilter === "all"}
             onClick={() => setCategoryFilter("all")}
             label={tt(translate, "it.common.all", "All")}
-            count={rows.length}
+            count={matchingTotal}
           />
           {Object.keys(categories)
             .sort()
@@ -85,14 +125,14 @@ export function RunbookList() {
                 key={c}
                 active={categoryFilter === c}
                 onClick={() => setCategoryFilter(c)}
-                label={c === "—" ? tt(translate, "it.common.uncategorized", "Uncategorized") : c}
+                label={c === UNCATEGORIZED ? tt(translate, "it.common.uncategorized", "Uncategorized") : c}
                 count={categories[c]}
               />
             ))}
         </div>
       </div>
 
-      {filtered.length === 0 ? (
+      {rows.length === 0 ? (
         <div className="rounded-xl border bg-card">
           <EmptyState
             label={
@@ -104,7 +144,7 @@ export function RunbookList() {
         </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {filtered.map((r) => {
+          {rows.map((r) => {
             const tags = (r.tags ?? "")
               .split(",")
               .map((t) => t.trim())
@@ -148,6 +188,8 @@ export function RunbookList() {
           })}
         </div>
       )}
+
+      <ListPagination {...pagination} total={total} />
       <Outlet />
     </div>
   );

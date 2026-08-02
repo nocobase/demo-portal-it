@@ -1,4 +1,4 @@
-import { useList, useTranslate } from "@refinedev/core";
+import { useList, useTranslate, type CrudFilters } from "@refinedev/core";
 import { Boxes, PackageCheck, ClipboardList, Users } from "lucide-react";
 import { useMemo, useState } from "react";
 
@@ -20,49 +20,90 @@ import {
   formatDate,
   personName,
   tt,
+  useCountWhere,
+  useDimensionCounts,
   type AssignmentRecord,
   type UserRef,
 } from "./lib";
+import { ListPagination, useListPagination } from "./pagination";
+
+// An assignment is active until it is checked back in. Absence is tested with
+// eq/ne against null rather than the "null"/"nnull" operators, which map to
+// $null/$notNull and match nothing on a date column in this NocoBase build.
+const ACTIVE_FILTERS: CrudFilters = [
+  { field: "checkedInAt", operator: "eq", value: null },
+];
+const HISTORY_FILTERS: CrudFilters = [
+  { field: "checkedInAt", operator: "ne", value: null },
+];
+
+// The active view pages over employee cards rather than rows: a card has to
+// list all of that person's devices to mean anything, so a group is never
+// split across a page boundary.
+const GROUPS_PER_PAGE = 12;
 
 export function AssignmentsOverview() {
   const translate = useTranslate();
   const [view, setView] = useState<"active" | "history">("active");
 
-  const { result, query } = useList<AssignmentRecord>({
+  // KPI figures are aggregated server-side, so they cover the whole table no
+  // matter which view or page is on screen. Grouping the active rows by member
+  // gives both the active count and the number of distinct employees.
+  const {
+    counts: activeByMember,
+    total: activeTotal,
+    isLoading: activeCountsLoading,
+  } = useDimensionCounts("it_assignments", "memberId", ACTIVE_FILTERS);
+  const { value: returnedTotal, isLoading: returnedLoading } = useCountWhere(
+    "it_assignments",
+    HISTORY_FILTERS
+  );
+
+  const distinctActiveMembers = Object.keys(activeByMember).length;
+  const avgPerEmployee =
+    distinctActiveMembers > 0 ? activeTotal / distinctActiveMembers : 0;
+
+  const activeQuery = useList<AssignmentRecord>({
     resource: "it_assignments",
-    pagination: { mode: "server", currentPage: 1, pageSize: 300 },
+    pagination: { mode: "server", currentPage: 1, pageSize: 500 },
+    filters: ACTIVE_FILTERS,
     sorters: [{ field: "checkedOutAt", order: "desc" }],
     meta: { appends: ["asset", "member"] },
-    queryOptions: { retry: false },
+    queryOptions: { retry: false, enabled: view === "active" },
   });
 
-  const rows = result.data;
-
-  const active = useMemo(
-    () => rows.filter((r) => !r.checkedInAt),
-    [rows]
-  );
-  const returned = useMemo(
-    () => rows.filter((r) => !!r.checkedInAt),
-    [rows]
-  );
+  const historyPagination = useListPagination("history");
+  const historyQuery = useList<AssignmentRecord>({
+    resource: "it_assignments",
+    pagination: {
+      mode: "server",
+      currentPage: historyPagination.currentPage,
+      pageSize: historyPagination.pageSize,
+    },
+    filters: HISTORY_FILTERS,
+    sorters: [{ field: "checkedInAt", order: "desc" }],
+    meta: { appends: ["asset", "member"] },
+    queryOptions: { retry: false, enabled: view === "history" },
+  });
 
   const groups = useMemo(() => {
     const map = new Map<
       string,
       { member: UserRef | null | undefined; items: AssignmentRecord[] }
     >();
-    for (const r of active) {
+    for (const r of activeQuery.result.data) {
       const key = r.memberId != null ? String(r.memberId) : `unknown-${r.id}`;
       if (!map.has(key)) map.set(key, { member: r.member, items: [] });
       map.get(key)!.items.push(r);
     }
     return Array.from(map.values()).sort((a, b) => b.items.length - a.items.length);
-  }, [active]);
+  }, [activeQuery.result.data]);
 
-  const distinctActiveMembers = groups.length;
-  const avgPerEmployee =
-    distinctActiveMembers > 0 ? active.length / distinctActiveMembers : 0;
+  const activePagination = useListPagination("active", GROUPS_PER_PAGE);
+  const groupPage = groups.slice(
+    (activePagination.currentPage - 1) * activePagination.pageSize,
+    activePagination.currentPage * activePagination.pageSize
+  );
 
   return (
     <div className="flex flex-col gap-6">
@@ -78,28 +119,28 @@ export function AssignmentsOverview() {
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <KpiCard
           label={tt(translate, "it.assignments.kpi.active", "Active assignments")}
-          value={active.length}
+          value={activeTotal}
           icon={<ClipboardList />}
-          loading={query.isLoading}
+          loading={activeCountsLoading}
         />
         <KpiCard
           label={tt(translate, "it.assignments.kpi.employees", "Employees with devices")}
           value={distinctActiveMembers}
           icon={<Users />}
-          loading={query.isLoading}
+          loading={activeCountsLoading}
         />
         <KpiCard
           label={tt(translate, "it.assignments.kpi.returned", "Devices returned")}
-          value={returned.length}
+          value={returnedTotal}
           icon={<PackageCheck />}
           tone="success"
-          loading={query.isLoading}
+          loading={returnedLoading}
         />
         <KpiCard
           label={tt(translate, "it.assignments.kpi.avg", "Avg devices/employee")}
           value={avgPerEmployee.toFixed(1)}
           icon={<Boxes />}
-          loading={query.isLoading}
+          loading={activeCountsLoading}
         />
       </div>
 
@@ -108,20 +149,37 @@ export function AssignmentsOverview() {
           active={view === "active"}
           onClick={() => setView("active")}
           label={tt(translate, "it.assignments.filter.active", "Currently assigned")}
-          count={active.length}
+          count={activeTotal}
         />
         <FilterChip
           active={view === "history"}
           onClick={() => setView("history")}
           label={tt(translate, "it.assignments.filter.history", "Return history")}
-          count={returned.length}
+          count={returnedTotal}
         />
       </div>
 
       {view === "active" ? (
-        <ActiveView groups={groups} loading={query.isLoading} translate={translate} />
+        <>
+          <ActiveView
+            groups={groupPage}
+            loading={activeQuery.query.isLoading}
+            translate={translate}
+          />
+          <ListPagination {...activePagination} total={groups.length} />
+        </>
       ) : (
-        <HistoryView rows={returned} loading={query.isLoading} translate={translate} />
+        <>
+          <HistoryView
+            rows={historyQuery.result.data}
+            loading={historyQuery.query.isLoading}
+            translate={translate}
+          />
+          <ListPagination
+            {...historyPagination}
+            total={historyQuery.result.total}
+          />
+        </>
       )}
     </div>
   );

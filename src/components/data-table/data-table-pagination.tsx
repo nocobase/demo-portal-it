@@ -36,7 +36,19 @@ export function DataTablePagination({
   setPageSize,
   total,
 }: DataTablePaginationProps) {
-  const translate = useTranslate();
+  const t = useTranslate();
+  // Keys live in the "starter" namespace; i18next's defaultNS is "translation",
+  // so the namespace has to be passed explicitly or every label would fall back
+  // to its English default.
+  const translate = (
+    key: string,
+    optionsOrDefault?: Record<string, unknown> | string,
+    fallback?: string
+  ) =>
+    typeof optionsOrDefault === "string"
+      ? t(key, { ns: "starter" }, optionsOrDefault)
+      : t(key, { ns: "starter", ...(optionsOrDefault ?? {}) }, fallback);
+
   const pageSizeOptions = useMemo(() => {
     const baseOptions = [10, 20, 30, 40, 50];
     const optionsSet = new Set(baseOptions);

@@ -1,4 +1,4 @@
-import { useList, useTranslate } from "@refinedev/core";
+import { useList, useTranslate, type CrudFilters } from "@refinedev/core";
 import { CheckCircle2, ClipboardList, Loader2, Plus, Search, ThumbsUp } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Outlet } from "react-router";
@@ -24,8 +24,14 @@ import {
   formatDate,
   personName,
   tt,
+  useDimensionCounts,
   type RequestRecord,
 } from "../lib";
+import {
+  ListPagination,
+  useDebouncedValue,
+  useListPagination,
+} from "../pagination";
 import { useOpenContextualChild } from "../route-surfaces";
 
 export function RequestList() {
@@ -34,35 +40,70 @@ export function RequestList() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
 
+  const searchTerm = useDebouncedValue(search.trim());
+  const pagination = useListPagination(`${statusFilter}|${searchTerm}`);
+
+  // The search box narrows the list on the server so it applies across every
+  // page, not just the rows that happen to be loaded.
+  const searchFilters = useMemo<CrudFilters>(
+    () =>
+      searchTerm
+        ? [
+            {
+              operator: "or",
+              value: [
+                { field: "subject", operator: "contains", value: searchTerm },
+                { field: "category", operator: "contains", value: searchTerm },
+                {
+                  field: "requestTypeRef.name",
+                  operator: "contains",
+                  value: searchTerm,
+                },
+                {
+                  field: "requester.nickname",
+                  operator: "contains",
+                  value: searchTerm,
+                },
+              ],
+            },
+          ]
+        : [],
+    [searchTerm]
+  );
+
+  const filters = useMemo<CrudFilters>(
+    () =>
+      statusFilter === "all"
+        ? searchFilters
+        : [
+            ...searchFilters,
+            { field: "status", operator: "eq", value: statusFilter },
+          ],
+    [searchFilters, statusFilter]
+  );
+
   const { result, query } = useList<RequestRecord>({
     resource: "it_requests",
-    pagination: { mode: "server", currentPage: 1, pageSize: 200 },
+    pagination: {
+      mode: "server",
+      currentPage: pagination.currentPage,
+      pageSize: pagination.pageSize,
+    },
+    filters,
     sorters: [{ field: "createdAt", order: "desc" }],
     meta: { appends: ["requester", "assignee", "requestTypeRef", "asset"] },
     queryOptions: { retry: false },
   });
 
   const rows = result.data;
+  const total = result.total;
 
-  const counts = useMemo(() => {
-    const c: Record<string, number> = {};
-    for (const r of rows) c[r.status ?? "—"] = (c[r.status ?? "—"] ?? 0) + 1;
-    return c;
-  }, [rows]);
-
-  const filtered = rows.filter((r) => {
-    if (statusFilter !== "all" && r.status !== statusFilter) return false;
-    if (!search) return true;
-    const q = search.toLowerCase();
-    return [
-      r.subject,
-      r.requestTypeRef?.name,
-      r.category,
-      personName(r.requester, ""),
-    ]
-      .filter(Boolean)
-      .some((v) => String(v).toLowerCase().includes(q));
-  });
+  // Counts come from the aggregate endpoint rather than the loaded rows, so
+  // the KPIs and chips describe the whole collection, not the current page.
+  // The status filter is deliberately left out: selecting one status should
+  // not zero out the other chips.
+  const { counts, total: matchingTotal, isLoading: countsLoading } =
+    useDimensionCounts("it_requests", "status", searchFilters);
 
   return (
     <div className="flex flex-col gap-6">
@@ -87,26 +128,26 @@ export function RequestList() {
           value={counts["New"] ?? 0}
           icon={<ClipboardList />}
           tone="warning"
-          loading={query.isLoading}
+          loading={countsLoading}
         />
         <KpiCard
           label={tt(translate, "it.requests.kpi.approved", "Approved")}
           value={counts["Approved"] ?? 0}
           icon={<ThumbsUp />}
-          loading={query.isLoading}
+          loading={countsLoading}
         />
         <KpiCard
           label={tt(translate, "it.requests.kpi.inProgress", "In progress")}
           value={counts["In progress"] ?? 0}
           icon={<Loader2 />}
-          loading={query.isLoading}
+          loading={countsLoading}
         />
         <KpiCard
           label={tt(translate, "it.requests.kpi.fulfilled", "Fulfilled")}
           value={counts["Fulfilled"] ?? 0}
           icon={<CheckCircle2 />}
           tone="success"
-          loading={query.isLoading}
+          loading={countsLoading}
         />
       </div>
 
@@ -129,7 +170,7 @@ export function RequestList() {
             active={statusFilter === "all"}
             onClick={() => setStatusFilter("all")}
             label={tt(translate, "it.common.all", "All")}
-            count={rows.length}
+            count={matchingTotal}
           />
           {REQUEST_STATUSES.map((s) => (
             <FilterChip
@@ -157,7 +198,7 @@ export function RequestList() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filtered.map((r) => (
+              {rows.map((r) => (
                 <TableRow
                   key={r.id}
                   className="cursor-pointer"
@@ -200,7 +241,7 @@ export function RequestList() {
                   </TableCell>
                 </TableRow>
               ))}
-              {filtered.length === 0 ? (
+              {rows.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={6}>
                     <EmptyState
@@ -217,6 +258,8 @@ export function RequestList() {
           </Table>
         </div>
       </div>
+
+      <ListPagination {...pagination} total={total} />
       <Outlet />
     </div>
   );

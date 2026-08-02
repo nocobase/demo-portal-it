@@ -28,6 +28,7 @@ import {
   type LicenseRecord,
   type Tone,
 } from "../lib";
+import { ListPagination, useListPagination } from "../pagination";
 import { useOpenContextualChild } from "../route-surfaces";
 
 type Classification = "compliant" | "overAllocated" | "expiringSoon" | "expired";
@@ -47,9 +48,17 @@ export function LicenseList() {
   const openChild = useOpenContextualChild();
   const [filter, setFilter] = useState<"all" | Classification>("all");
 
+  const pagination = useListPagination(filter);
+
+  // Unlike the other lists this one paginates client-side. Its filters are
+  // derived, not stored: "over-allocated" compares seatsUsed against
+  // seatsTotal, a column-to-column test NocoBase filters cannot express, and
+  // the classification also drives the KPI and compliance figures. Licenses
+  // are a small, slow-growing collection, so classifying the set in the
+  // browser stays cheap and keeps every number exact.
   const { result, query } = useList<LicenseRecord>({
     resource: "it_licenses",
-    pagination: { mode: "server", currentPage: 1, pageSize: 200 },
+    pagination: { mode: "server", currentPage: 1, pageSize: 500 },
     sorters: [{ field: "renewalDate", order: "asc" }],
     meta: { appends: ["owner"] },
     queryOptions: { retry: false },
@@ -92,6 +101,10 @@ export function LicenseList() {
   const compliancePct = rows.length > 0 ? Math.round((compliantCount / rows.length) * 100) : 0;
 
   const filtered = filter === "all" ? classified : classified.filter(({ c }) => c === filter);
+  const pageRows = filtered.slice(
+    (pagination.currentPage - 1) * pagination.pageSize,
+    pagination.currentPage * pagination.pageSize
+  );
 
   const alertCount = counts.overAllocated + counts.expiringSoon;
 
@@ -165,7 +178,7 @@ export function LicenseList() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filtered.map(({ r }) => {
+              {pageRows.map(({ r }) => {
                 const seatsUsed = r.seatsUsed ?? 0;
                 const seatsTotal = r.seatsTotal ?? 0;
                 const over = seatsUsed > seatsTotal;
@@ -204,7 +217,7 @@ export function LicenseList() {
                   </TableRow>
                 );
               })}
-              {filtered.length === 0 ? (
+              {pageRows.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={7}>
                     <EmptyState label={query.isLoading ? tt(translate, "it.common.loading", "Loading...") : tt(translate, "it.licenses.empty", "No licenses match your filters.")} />
@@ -215,6 +228,8 @@ export function LicenseList() {
           </Table>
         </div>
       </div>
+
+      <ListPagination {...pagination} total={filtered.length} />
       <Outlet />
     </div>
   );

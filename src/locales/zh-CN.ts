@@ -236,6 +236,9 @@ export const starter = {
   "buildStory.unit.min": " 分钟",
   "buildStory.modules": "个模块",
   "buildStory.downloadable": "可下载 · Agent 可改",
+  "buildStory.copyPrompt": "复制 Agent 提示词",
+  "buildStory.promptCopied": "已复制",
+  "buildStory.copyPromptHint": "复制一段提示词,粘贴到你自己的编码 agent 里继续开发",
   "buildStory.showTimeline": "查看构建过程",
   "buildStory.hideTimeline": "收起构建过程",
   "buildStory.parallelHint":

@@ -1,4 +1,4 @@
-import { useList, useTranslate } from "@refinedev/core";
+import { useList, useTranslate, type CrudFilters } from "@refinedev/core";
 import { Boxes, Plus, Search } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Outlet } from "react-router";
@@ -25,8 +25,15 @@ import {
   money,
   personName,
   tt,
+  useDimensionCounts,
+  useSumOf,
   type AssetRecord,
 } from "../lib";
+import {
+  ListPagination,
+  useDebouncedValue,
+  useListPagination,
+} from "../pagination";
 import { useOpenContextualChild } from "../route-surfaces";
 
 export function AssetList() {
@@ -35,35 +42,77 @@ export function AssetList() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
 
+  const searchTerm = useDebouncedValue(search.trim());
+  const pagination = useListPagination(`${statusFilter}|${searchTerm}`);
+
+  // Searching happens on the server so it spans the whole register rather than
+  // only the rows on the current page.
+  const searchFilters = useMemo<CrudFilters>(
+    () =>
+      searchTerm
+        ? [
+            {
+              operator: "or",
+              value: [
+                { field: "name", operator: "contains", value: searchTerm },
+                { field: "assetTag", operator: "contains", value: searchTerm },
+                { field: "brand", operator: "contains", value: searchTerm },
+                { field: "model", operator: "contains", value: searchTerm },
+                {
+                  field: "serialNumber",
+                  operator: "contains",
+                  value: searchTerm,
+                },
+                { field: "location", operator: "contains", value: searchTerm },
+                {
+                  field: "assignee.nickname",
+                  operator: "contains",
+                  value: searchTerm,
+                },
+              ],
+            },
+          ]
+        : [],
+    [searchTerm]
+  );
+
+  const filters = useMemo<CrudFilters>(
+    () =>
+      statusFilter === "all"
+        ? searchFilters
+        : [
+            ...searchFilters,
+            { field: "status", operator: "eq", value: statusFilter },
+          ],
+    [searchFilters, statusFilter]
+  );
+
   const { result, query } = useList<AssetRecord>({
     resource: "it_assets",
-    pagination: { mode: "server", currentPage: 1, pageSize: 200 },
+    pagination: {
+      mode: "server",
+      currentPage: pagination.currentPage,
+      pageSize: pagination.pageSize,
+    },
+    filters,
     sorters: [{ field: "createdAt", order: "desc" }],
     meta: { appends: ["assignee"] },
     queryOptions: { retry: false },
   });
 
   const rows = result.data;
+  const total = result.total;
 
-  const counts = useMemo(() => {
-    const c: Record<string, number> = {};
-    for (const r of rows) c[r.status ?? "—"] = (c[r.status ?? "—"] ?? 0) + 1;
-    return c;
-  }, [rows]);
-
-  const totalValue = useMemo(
-    () => rows.reduce((s, r) => s + (r.purchaseCost ?? 0), 0),
-    [rows]
+  // KPIs and chip counts are aggregated server-side so they stay accurate for
+  // the whole register while the table only loads one page. The status filter
+  // is excluded so picking one status does not zero out the other chips.
+  const { counts, total: matchingTotal, isLoading: countsLoading } =
+    useDimensionCounts("it_assets", "status", searchFilters);
+  const { value: totalValue, isLoading: valueLoading } = useSumOf(
+    "it_assets",
+    "purchaseCost",
+    searchFilters
   );
-
-  const filtered = rows.filter((r) => {
-    if (statusFilter !== "all" && r.status !== statusFilter) return false;
-    if (!search) return true;
-    const q = search.toLowerCase();
-    return [r.name, r.assetTag, r.brand, r.model, r.serialNumber, r.location, personName(r.assignee, "")]
-      .filter(Boolean)
-      .some((v) => String(v).toLowerCase().includes(q));
-  });
 
   return (
     <div className="flex flex-col gap-6">
@@ -79,10 +128,10 @@ export function AssetList() {
       />
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <KpiCard label={tt(translate, "it.assets.kpi.total", "Total assets")} value={rows.length} icon={<Boxes />} loading={query.isLoading} />
-        <KpiCard label={tt(translate, "it.assets.kpi.inUse", "In use")} value={counts["In use"] ?? 0} tone="success" loading={query.isLoading} />
-        <KpiCard label={tt(translate, "it.assets.kpi.available", "Available")} value={(counts["Available"] ?? 0) + (counts["In stock"] ?? 0)} loading={query.isLoading} />
-        <KpiCard label={tt(translate, "it.assets.kpi.value", "Fleet value")} value={money(totalValue)} hint={tt(translate, "it.assets.kpi.valueHint", "Total purchase cost")} loading={query.isLoading} />
+        <KpiCard label={tt(translate, "it.assets.kpi.total", "Total assets")} value={matchingTotal} icon={<Boxes />} loading={countsLoading} />
+        <KpiCard label={tt(translate, "it.assets.kpi.inUse", "In use")} value={counts["In use"] ?? 0} tone="success" loading={countsLoading} />
+        <KpiCard label={tt(translate, "it.assets.kpi.available", "Available")} value={(counts["Available"] ?? 0) + (counts["In stock"] ?? 0)} loading={countsLoading} />
+        <KpiCard label={tt(translate, "it.assets.kpi.value", "Fleet value")} value={money(totalValue)} hint={tt(translate, "it.assets.kpi.valueHint", "Total purchase cost")} loading={valueLoading} />
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
@@ -96,7 +145,7 @@ export function AssetList() {
           />
         </div>
         <div className="flex flex-wrap gap-1.5">
-          <FilterChip active={statusFilter === "all"} onClick={() => setStatusFilter("all")} label={tt(translate, "it.common.all", "All")} count={rows.length} />
+          <FilterChip active={statusFilter === "all"} onClick={() => setStatusFilter("all")} label={tt(translate, "it.common.all", "All")} count={matchingTotal} />
           {ASSET_STATUSES.map((s) => (
             <FilterChip
               key={s}
@@ -124,7 +173,7 @@ export function AssetList() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filtered.map((r) => (
+              {rows.map((r) => (
                 <TableRow key={r.id} className="cursor-pointer" onClick={() => openChild(String(r.id))}>
                   <TableCell className="font-mono text-xs text-muted-foreground">{r.assetTag ?? "—"}</TableCell>
                   <TableCell>
@@ -138,7 +187,7 @@ export function AssetList() {
                   <TableCell><ValuePill translate={translate} value={r.status} /></TableCell>
                 </TableRow>
               ))}
-              {filtered.length === 0 ? (
+              {rows.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={7}>
                     <EmptyState label={query.isLoading ? tt(translate, "it.common.loading", "Loading...") : tt(translate, "it.assets.empty", "No assets match your filters.")} />
@@ -149,6 +198,8 @@ export function AssetList() {
           </Table>
         </div>
       </div>
+
+      <ListPagination {...pagination} total={total} />
       <Outlet />
     </div>
   );

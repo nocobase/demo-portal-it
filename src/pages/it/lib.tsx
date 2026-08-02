@@ -1,5 +1,7 @@
-import type { useTranslate } from "@refinedev/core";
+import type { CrudFilters, useTranslate } from "@refinedev/core";
 import { nocobaseClient } from "@nocobase/portal-sdk/client";
+import { useQuery } from "@tanstack/react-query";
+import { useMemo } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Breadcrumb } from "@/components/app-shell/breadcrumb";
@@ -249,15 +251,21 @@ export const daysUntil = (value?: string | null) => {
 
 export type AggRow = Record<string, number | string | null>;
 
+// The column counted by the aggregate endpoint. It has to be a registered
+// field: collections that do not declare "id" (it_runbooks, for one) silently
+// return ungrouped rows with no count at all, so those pass their own.
+const DEFAULT_COUNT_FIELD = "id";
+
 // Grouped aggregate query against a collection.
 export const aggregate = (
   resource: string,
   dimension: string,
-  filter?: Record<string, unknown>
+  filter?: Record<string, unknown>,
+  countField: string = DEFAULT_COUNT_FIELD
 ) =>
   nocobaseClient.action<AggRow[]>(resource, "query", {
     body: {
-      measures: [{ field: ["id"], aggregation: "count", alias: "n" }],
+      measures: [{ field: [countField], aggregation: "count", alias: "n" }],
       dimensions: [{ field: [dimension], alias: "k" }],
       ...(filter ? { filter } : {}),
     },
@@ -277,15 +285,131 @@ export const sumField = (
     })
     .then((rows) => Number(rows[0]?.s ?? 0));
 
-export const countWhere = (resource: string, filter?: Record<string, unknown>) =>
+export const countWhere = (
+  resource: string,
+  filter?: Record<string, unknown>,
+  countField: string = DEFAULT_COUNT_FIELD
+) =>
   nocobaseClient
     .action<AggRow[]>(resource, "query", {
       body: {
-        measures: [{ field: ["id"], aggregation: "count", alias: "n" }],
+        measures: [{ field: [countField], aggregation: "count", alias: "n" }],
         ...(filter ? { filter } : {}),
       },
     })
     .then((rows) => Number(rows[0]?.n ?? 0));
+
+/* ------------------------------------------------------------------ */
+/* Paginated-list helpers                                              */
+/* ------------------------------------------------------------------ */
+
+const FILTER_OPERATORS: Record<string, string> = {
+  eq: "$eq",
+  ne: "$ne",
+  in: "$in",
+  contains: "$includes",
+  startswith: "$startsWith",
+  endswith: "$endsWith",
+  null: "$null",
+  nnull: "$notNull",
+  lt: "$lt",
+  lte: "$lte",
+  gt: "$gt",
+  gte: "$gte",
+};
+
+/**
+ * Mirrors the portal data provider's Refine-filter -> NocoBase-filter
+ * conversion. A list page keeps its filters in Refine form for useList; this
+ * lets the same filters drive the aggregate endpoint, so the KPI and chip
+ * counts always describe exactly the rows the paginated table is showing.
+ *
+ * The mapping stays deliberately identical to the provider's, including the
+ * "null"/"nnull" entries. Note those two are unusable here in practice: they
+ * emit $null/$notNull, which this NocoBase build rejects on string columns and
+ * silently matches nothing on date columns. Test for an absent value with
+ * operator "eq"/"ne" against a null value instead, which works on both.
+ */
+export const toNocoBaseFilter = (
+  filters: CrudFilters
+): Record<string, unknown> | undefined => {
+  const items = filters.flatMap((filter) => {
+    if ("field" in filter) {
+      const operator = FILTER_OPERATORS[filter.operator ?? "eq"] ?? "$eq";
+      return [{ [filter.field]: { [operator]: filter.value } }];
+    }
+    const nested = toNocoBaseFilter(filter.value as CrudFilters);
+    if (!nested) return [];
+    return [
+      { [`$${filter.operator}`]: (nested.$and as unknown[]) ?? [nested] },
+    ];
+  });
+
+  if (!items.length) return undefined;
+  return items.length === 1 ? items[0] : { $and: items };
+};
+
+/**
+ * Server-side grouped counts, e.g. how many assets sit in each status. Lets a
+ * page show whole-collection totals on its KPI cards and filter chips while
+ * the table below only ever fetches one page of rows.
+ */
+export function useDimensionCounts(
+  resource: string,
+  dimension: string,
+  filters: CrudFilters = [],
+  countField?: string
+) {
+  const filter = toNocoBaseFilter(filters);
+  const query = useQuery({
+    queryKey: ["it-agg", resource, dimension, filter ?? null, countField ?? null],
+    queryFn: () => aggregate(resource, dimension, filter, countField),
+  });
+
+  const { counts, total } = useMemo(() => {
+    const result: Record<string, number> = {};
+    let sum = 0;
+    for (const row of query.data ?? []) {
+      const key = row.k == null || row.k === "" ? "—" : String(row.k);
+      const n = Number(row.n ?? 0);
+      result[key] = (result[key] ?? 0) + n;
+      sum += n;
+    }
+    return { counts: result, total: sum };
+  }, [query.data]);
+
+  return { counts, total, isLoading: query.isLoading };
+}
+
+/** Server-side SUM of a numeric column, for money KPIs on paginated pages. */
+export function useSumOf(
+  resource: string,
+  field: string,
+  filters: CrudFilters = []
+) {
+  const filter = toNocoBaseFilter(filters);
+  const query = useQuery({
+    queryKey: ["it-sum", resource, field, filter ?? null],
+    queryFn: () => sumField(resource, field, filter),
+  });
+
+  return { value: query.data ?? 0, isLoading: query.isLoading };
+}
+
+/** Server-side row count for an arbitrary predicate. */
+export function useCountWhere(
+  resource: string,
+  filters: CrudFilters = [],
+  countField?: string
+) {
+  const filter = toNocoBaseFilter(filters);
+  const query = useQuery({
+    queryKey: ["it-count", resource, filter ?? null, countField ?? null],
+    queryFn: () => countWhere(resource, filter, countField),
+  });
+
+  return { value: query.data ?? 0, isLoading: query.isLoading };
+}
 
 /* ------------------------------------------------------------------ */
 /* Chart theme (blue-forward, theme-aware)                             */
