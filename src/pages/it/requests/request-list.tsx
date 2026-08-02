@@ -24,7 +24,7 @@ import {
   formatDate,
   personName,
   tt,
-  useDimensionCounts,
+  useStatusValues,
   type RequestRecord,
 } from "../lib";
 import {
@@ -102,8 +102,12 @@ export function RequestList() {
   // the KPIs and chips describe the whole collection, not the current page.
   // The status filter is deliberately left out: selecting one status should
   // not zero out the other chips.
-  const { counts, total: matchingTotal, isLoading: countsLoading } =
-    useDimensionCounts("it_requests", "status", searchFilters);
+  const {
+    values: statuses,
+    counts,
+    total: matchingTotal,
+    isLoading: countsLoading,
+  } = useStatusValues("it_requests", "status", REQUEST_STATUSES, searchFilters);
 
   return (
     <div className="flex flex-col gap-6">
@@ -172,7 +176,7 @@ export function RequestList() {
             label={tt(translate, "it.common.all", "All")}
             count={matchingTotal}
           />
-          {REQUEST_STATUSES.map((s) => (
+          {statuses.map((s) => (
             <FilterChip
               key={s}
               active={statusFilter === s}

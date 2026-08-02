@@ -25,7 +25,7 @@ import {
   money,
   personName,
   tt,
-  useDimensionCounts,
+  useStatusValues,
   useSumOf,
   type AssetRecord,
 } from "../lib";
@@ -106,8 +106,12 @@ export function AssetList() {
   // KPIs and chip counts are aggregated server-side so they stay accurate for
   // the whole register while the table only loads one page. The status filter
   // is excluded so picking one status does not zero out the other chips.
-  const { counts, total: matchingTotal, isLoading: countsLoading } =
-    useDimensionCounts("it_assets", "status", searchFilters);
+  const {
+    values: statuses,
+    counts,
+    total: matchingTotal,
+    isLoading: countsLoading,
+  } = useStatusValues("it_assets", "status", ASSET_STATUSES, searchFilters);
   const { value: totalValue, isLoading: valueLoading } = useSumOf(
     "it_assets",
     "purchaseCost",
@@ -146,7 +150,7 @@ export function AssetList() {
         </div>
         <div className="flex flex-wrap gap-1.5">
           <FilterChip active={statusFilter === "all"} onClick={() => setStatusFilter("all")} label={tt(translate, "it.common.all", "All")} count={matchingTotal} />
-          {ASSET_STATUSES.map((s) => (
+          {statuses.map((s) => (
             <FilterChip
               key={s}
               active={statusFilter === s}

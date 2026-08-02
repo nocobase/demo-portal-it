@@ -10,7 +10,7 @@ import {
 } from "@refinedev/core";
 import { useQueryClient } from "@tanstack/react-query";
 import { Pencil, Plus } from "lucide-react";
-import { useMemo, useState, type DragEvent, type FormEvent } from "react";
+import { useState, type DragEvent, type FormEvent } from "react";
 import { useNavigate, useOutlet, useParams } from "react-router";
 import { Outlet } from "react-router";
 
@@ -46,6 +46,7 @@ import {
   personName,
   tt,
   useDimensionCounts,
+  useStatusValues,
   type FulfillmentJobRecord,
   type RequestRecord,
   type UserRef,
@@ -53,7 +54,7 @@ import {
 import { ShowMore, useColumnLimits } from "./pagination";
 import { useContextualCloseTo, useOpenContextualChild } from "./route-surfaces";
 
-type Stage = (typeof FULFILLMENT_STAGES)[number];
+type Stage = string;
 
 // What a dragged card carries. The board no longer holds every job in memory,
 // so the payload has to describe the record well enough to move it.
@@ -63,12 +64,14 @@ type DragPayload = {
   requestId?: FulfillmentJobRecord["requestId"];
 };
 
-const COLUMN_STYLES: Record<Stage, string> = {
+const COLUMN_STYLES: Record<string, string> = {
   Queued: "border-t-blue-400",
   "In progress": "border-t-amber-400",
   Blocked: "border-t-red-400",
   Done: "border-t-emerald-400",
 };
+// Any status outside the canonical stages still gets a column.
+const EXTRA_COLUMN_STYLE = "border-t-slate-400";
 
 export function FulfillmentBoard() {
   const translate = useTranslate();
@@ -76,7 +79,14 @@ export function FulfillmentBoard() {
   const update = useUpdate();
   const [dragOver, setDragOver] = useState<Stage | null>(null);
 
-  const { limitFor, showMore } = useColumnLimits(FULFILLMENT_STAGES);
+  // Columns come from the data so a job whose status drifted off the
+  // canonical list still has somewhere to appear.
+  const { values: stages } = useStatusValues(
+    "it_fulfillment_jobs",
+    "status",
+    FULFILLMENT_STAGES
+  );
+  const { limitFor, showMore } = useColumnLimits(stages);
   const invalidate = useInvalidate();
   const queryClient = useQueryClient();
 
@@ -174,7 +184,7 @@ export function FulfillmentBoard() {
       </div>
 
       <div className="grid flex-1 items-start gap-4 md:grid-cols-2 xl:grid-cols-4">
-        {FULFILLMENT_STAGES.map((stage) => (
+        {stages.map((stage) => (
           <FulfillmentColumn
             key={stage}
             stage={stage}
@@ -243,7 +253,7 @@ function FulfillmentColumn({
       onDrop={onDrop}
       className={cn(
         "flex min-h-48 flex-col gap-3 rounded-xl border border-t-2 bg-muted/40 p-3 transition-colors",
-        COLUMN_STYLES[stage],
+        COLUMN_STYLES[stage] ?? EXTRA_COLUMN_STYLE,
         dragOver && "border-primary/50 bg-primary/5"
       )}
     >

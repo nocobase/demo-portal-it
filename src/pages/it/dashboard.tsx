@@ -38,6 +38,8 @@ import {
   toneFor,
   TONE_HEX,
   daysUntil,
+  isAssetInUse,
+  isRequestOpen,
   type AggRow,
   type AssetRecord,
   type LicenseRecord,
@@ -90,7 +92,7 @@ export function DashboardPage() {
 
   const assetValue = assets.reduce((s, a) => s + (a.purchaseCost ?? 0), 0);
   const assignable = assets.filter((a) => a.status !== "Retired").length;
-  const inUse = assets.filter((a) => a.status === "In use").length;
+  const inUse = assets.filter((a) => isAssetInUse(a.status)).length;
   const utilization = assignable > 0 ? Math.round((inUse / assignable) * 100) : 0;
 
   const seatsTotal = licenses.reduce((s, l) => s + (l.seatsTotal ?? 0), 0);
@@ -98,7 +100,7 @@ export function DashboardPage() {
   const compliant = licenses.filter((l) => (l.seatsUsed ?? 0) <= (l.seatsTotal ?? 0) && (daysUntil(l.renewalDate) ?? 1) >= 0).length;
   const compliancePct = licenses.length > 0 ? Math.round((compliant / licenses.length) * 100) : 100;
 
-  const openRequests = requests.filter((r) => ["New", "Approved", "In progress"].includes(String(r.status)));
+  const openRequests = requests.filter((r) => isRequestOpen(r.status));
   const repairsBacklog = repairs.filter((r) => r.status !== "Done");
 
   const pieData = (byStatusQ.data ?? []).map((r: AggRow) => ({ name: String(r.k ?? "—"), value: Number(r.n) }));

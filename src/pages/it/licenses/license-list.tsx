@@ -20,18 +20,43 @@ import {
   Meter,
   PageHeader,
   StatusPill,
-  ValuePill,
   daysUntil,
   formatDate,
   money,
   tt,
   type LicenseRecord,
+  type Translate,
   type Tone,
 } from "../lib";
 import { ListPagination, useListPagination } from "../pagination";
 import { useOpenContextualChild } from "../route-surfaces";
 
 type Classification = "compliant" | "overAllocated" | "expiringSoon" | "expired";
+
+// Tone + label for a derived classification, so the Status column and the
+// filter chips describe a license the same way.
+const CLASSIFICATION_TONE: Record<Classification, Tone> = {
+  compliant: "emerald",
+  overAllocated: "red",
+  expiringSoon: "amber",
+  expired: "red",
+};
+
+const classificationLabel = (
+  translate: Translate,
+  classification: Classification
+) => {
+  switch (classification) {
+    case "overAllocated":
+      return tt(translate, "it.licenses.filter.overAllocated", "Over-allocated");
+    case "expiringSoon":
+      return tt(translate, "it.licenses.filter.expiringSoon", "Expiring soon");
+    case "expired":
+      return tt(translate, "it.licenses.filter.expired", "Expired");
+    default:
+      return tt(translate, "it.licenses.filter.compliant", "Compliant");
+  }
+};
 
 function classify(r: LicenseRecord): Classification {
   const seatsUsed = r.seatsUsed ?? 0;
@@ -178,7 +203,7 @@ export function LicenseList() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {pageRows.map(({ r }) => {
+              {pageRows.map(({ r, c }) => {
                 const seatsUsed = r.seatsUsed ?? 0;
                 const seatsTotal = r.seatsTotal ?? 0;
                 const over = seatsUsed > seatsTotal;
@@ -213,7 +238,17 @@ export function LicenseList() {
                       <StatusPill value={renewalLabel} tone={renewalTone} className="mt-1" />
                     </TableCell>
                     <TableCell className="text-sm">{money(r.annualCost)}</TableCell>
-                    <TableCell><ValuePill translate={translate} value={r.status} /></TableCell>
+                    <TableCell>
+                      {/* Derived from renewal date and seat usage - the same
+                          rule the filter chips use. The stored status field
+                          drifts out of step with the dates (a license 6 days
+                          from renewal was stored as "Expiring" while one 15
+                          days out still read "Active"). */}
+                      <StatusPill
+                        value={classificationLabel(translate, c)}
+                        tone={CLASSIFICATION_TONE[c]}
+                      />
+                    </TableCell>
                   </TableRow>
                 );
               })}

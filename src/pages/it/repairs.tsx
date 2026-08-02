@@ -45,7 +45,7 @@ import {
   formatDate,
   money,
   tt,
-  useDimensionCounts,
+  useStatusValues,
   useSumOf,
   type AssetRecord,
   type RepairRecord,
@@ -53,13 +53,16 @@ import {
 import { ShowMore, useColumnLimits } from "./pagination";
 import { useContextualCloseTo, useOpenContextualChild } from "./route-surfaces";
 
-type RepairStage = (typeof REPAIR_STAGES)[number];
+type RepairStage = string;
 
-const COLUMN_STYLES: Record<RepairStage, string> = {
+const COLUMN_STYLES: Record<string, string> = {
   Open: "border-t-blue-400",
   "In progress": "border-t-amber-400",
   Done: "border-t-emerald-400",
 };
+// Any status that is not one of the canonical stages still gets a column, so
+// no repair is unreachable.
+const EXTRA_COLUMN_STYLE = "border-t-slate-400";
 
 // What a dragged card carries. The board no longer holds every repair in
 // memory, so the payload has to describe the record well enough to move it.
@@ -76,14 +79,14 @@ export function RepairsBoard() {
   const invalidate = useInvalidate();
   const queryClient = useQueryClient();
   const [dragOver, setDragOver] = useState<RepairStage | null>(null);
-  const { limitFor, showMore } = useColumnLimits(REPAIR_STAGES);
-
-  // Counts and total cost are aggregated server-side, so they describe every
-  // repair even though each column only loads its first batch of cards.
-  const { counts, isLoading: countsLoading } = useDimensionCounts(
-    "it_repairs",
-    "status"
-  );
+  // Columns come from the data, not a hardcoded list: the canonical stages
+  // first, then any other status present in the collection.
+  const {
+    values: stages,
+    counts,
+    isLoading: countsLoading,
+  } = useStatusValues("it_repairs", "status", REPAIR_STAGES);
+  const { limitFor, showMore } = useColumnLimits(stages);
   const { value: totalCost, isLoading: costLoading } = useSumOf(
     "it_repairs",
     "cost"
@@ -162,7 +165,7 @@ export function RepairsBoard() {
       </div>
 
       <div className="grid flex-1 items-start gap-4 md:grid-cols-3">
-        {REPAIR_STAGES.map((stage) => (
+        {stages.map((stage) => (
           <RepairColumn
             key={stage}
             stage={stage}
@@ -231,7 +234,7 @@ function RepairColumn({
       onDrop={onDrop}
       className={cn(
         "flex min-h-48 flex-col gap-3 rounded-xl border border-t-2 bg-muted/40 p-3 transition-colors",
-        COLUMN_STYLES[stage],
+        COLUMN_STYLES[stage] ?? EXTRA_COLUMN_STYLE,
         dragOver && "border-primary/50 bg-primary/5"
       )}
     >

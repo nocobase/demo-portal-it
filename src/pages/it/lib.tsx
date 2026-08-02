@@ -177,6 +177,31 @@ export const FULFILLMENT_STAGES = [
   "Done",
 ] as const;
 
+// Terminal states, defined by exclusion. Membership tests phrased as "is this
+// one of the open statuses" silently drop records whose status is not on the
+// list; asking "is it finished" instead keeps an unrecognised status visible
+// as open, which is the safer default for a backlog.
+export const REQUEST_CLOSED_STATUSES = [
+  "Fulfilled",
+  "Resolved",
+  "Rejected",
+  "Cancelled",
+  "Closed",
+] as const;
+
+export const isRequestOpen = (status: unknown) =>
+  !REQUEST_CLOSED_STATUSES.includes(
+    String(status ?? "") as (typeof REQUEST_CLOSED_STATUSES)[number]
+  );
+
+// An asset counts against utilisation whenever it is in someone's hands.
+export const ASSET_IN_USE_STATUSES = ["In use", "Assigned"] as const;
+
+export const isAssetInUse = (status: unknown) =>
+  ASSET_IN_USE_STATUSES.includes(
+    String(status ?? "") as (typeof ASSET_IN_USE_STATUSES)[number]
+  );
+
 export const LICENSE_STATUSES = [
   "Active",
   "Expiring soon",
@@ -394,6 +419,39 @@ export function useSumOf(
   });
 
   return { value: query.data ?? 0, isLoading: query.isLoading };
+}
+
+/**
+ * The status values a page should render: the canonical list first, then any
+ * other value that actually exists in the data.
+ *
+ * Hardcoding the canonical list alone silently hides records whose status
+ * drifted from it - a stray "Scheduled" repair belongs to no column and simply
+ * disappears. Deriving the tail from a grouped count keeps every record
+ * reachable, and new statuses show up on their own instead of going missing.
+ */
+export function useStatusValues(
+  resource: string,
+  field: string,
+  canonical: readonly string[],
+  filters: CrudFilters = [],
+  countField?: string
+) {
+  const { counts, total, isLoading } = useDimensionCounts(
+    resource,
+    field,
+    filters,
+    countField
+  );
+
+  const values = useMemo(() => {
+    const extras = Object.keys(counts)
+      .filter((key) => key !== "—" && !canonical.includes(key))
+      .sort();
+    return [...canonical, ...extras];
+  }, [counts, canonical]);
+
+  return { values, counts, total, isLoading };
 }
 
 /** Server-side row count for an arbitrary predicate. */
