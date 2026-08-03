@@ -8,7 +8,7 @@
     "defaultTemplateVersion": "3.0.2"
   },
   "dependencies": {
-    "@nocobase/portal-sdk": "^2.0.1"
+    "@nocobase/portal-sdk": "^2.0.2"
   },
   "devDependencies": {
     "@ai-sdk/react": "2.0.0",

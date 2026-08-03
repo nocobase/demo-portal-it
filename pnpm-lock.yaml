@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       '@nocobase/portal-sdk':
-        specifier: ^2.0.1
-        version: 2.0.1(@refinedev/core@5.0.12(@tanstack/react-query@5.101.4(react@19.1.0))(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(@tanstack/react-query@5.101.4(react@19.1.0))(react-router@7.18.2(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react@19.1.0)(typescript@5.9.3)(vite@6.4.3(@types/node@20.19.43)(jiti@2.7.0)(lightningcss@1.32.0))
+        specifier: ^2.0.2
+        version: 2.0.2(@refinedev/core@5.0.12(@tanstack/react-query@5.101.4(react@19.1.0))(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(@tanstack/react-query@5.101.4(react@19.1.0))(react-router@7.18.2(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react@19.1.0)(typescript@5.9.3)(vite@6.4.3(@types/node@20.19.43)(jiti@2.7.0)(lightningcss@1.32.0))
     devDependencies:
       '@ai-sdk/react':
         specifier: 2.0.0
@@ -867,8 +867,8 @@ packages:
     peerDependencies:
       '@dicebear/core': ^9.0.0
 
-  '@nocobase/portal-sdk@2.0.1':
-    resolution: {integrity: sha512-z92SkM5KLoBb6F0RMVhxTBbxfvdCfsqRMGjPFe1dgZpSQAXx80YHXCxcWWbgvro2jZ9PhY9i0weZH1offy7mQQ==}
+  '@nocobase/portal-sdk@2.0.2':
+    resolution: {integrity: sha512-vi6kyPkWeZdW75BK/esYMCwMOUjnI+v1gOIwhIHarEYXiY6tlJ34+tVZ4ZCxYyDqAMzb/wEs5yJyIlBUSsdM5Q==}
     hasBin: true
     peerDependencies:
       '@refinedev/core': ^5.0.0
@@ -5466,7 +5466,7 @@ snapshots:
     dependencies:
       '@dicebear/core': 9.4.3
 
-  '@nocobase/portal-sdk@2.0.1(@refinedev/core@5.0.12(@tanstack/react-query@5.101.4(react@19.1.0))(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(@tanstack/react-query@5.101.4(react@19.1.0))(react-router@7.18.2(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react@19.1.0)(typescript@5.9.3)(vite@6.4.3(@types/node@20.19.43)(jiti@2.7.0)(lightningcss@1.32.0))':
+  '@nocobase/portal-sdk@2.0.2(@refinedev/core@5.0.12(@tanstack/react-query@5.101.4(react@19.1.0))(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(@tanstack/react-query@5.101.4(react@19.1.0))(react-router@7.18.2(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react@19.1.0)(typescript@5.9.3)(vite@6.4.3(@types/node@20.19.43)(jiti@2.7.0)(lightningcss@1.32.0))':
     dependencies:
       '@refinedev/core': 5.0.12(@tanstack/react-query@5.101.4(react@19.1.0))(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       '@tanstack/react-query': 5.101.4(react@19.1.0)
