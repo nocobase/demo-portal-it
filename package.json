@@ -5,12 +5,10 @@
   "private": true,
   "type": "module",
   "nocobase": {
-    "defaultTemplateVersion": "3.0.2"
-  },
-  "dependencies": {
-    "@nocobase/portal-sdk": "^2.0.2"
+    "defaultTemplateVersion": "3.0.4"
   },
   "devDependencies": {
+    "@nocobase/portal-sdk": "^2.0.2",
     "@ai-sdk/react": "2.0.0",
     "@base-ui/react": "^1.6.0",
     "@dicebear/core": "^9.4.3",
