@@ -6,4 +6,4 @@ allowBuilds:
   esbuild: true
 
 minimumReleaseAgeExclude:
-  - '@nocobase/portal-sdk@2.0.2'
+  - '@nocobase/portal-sdk@2.0.2 || 2.0.3'
