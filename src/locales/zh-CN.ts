@@ -231,7 +231,7 @@ export const starter = {
   "buildStory.title": "由 AI Agent 搭建",
   "buildStory.badge": "100% Agent 构建",
   "buildStory.description":
-    "这个门户从设计到编码全部由 AI agent 完成,没有手写样板代码。它是一个开放 demo:下载后,用你自己的编码 agent 继续定制。",
+    "面向公司内部的 IT 运维台:同事报修、设备台账、变更审批都在这儿走,谁领了什么设备、修到哪一步都记得住。整套系统从设计到实现,都由 AI coding agent 完成。你可以接入你的 Coding Agent,继续开发它。",
   "buildStory.stat.time": "有效搭建",
   "buildStory.unit.hour": " 小时",
   "buildStory.unit.min": " 分钟",
