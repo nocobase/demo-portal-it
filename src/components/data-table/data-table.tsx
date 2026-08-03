@@ -42,6 +42,19 @@ export function DataTable<TData extends BaseRecord>({
   const leafColumns = table.reactTable.getAllLeafColumns();
   const isLoading = tableQuery.isLoading;
 
+  // Keep the row-actions column reachable: pin it to the right so it can be
+  // neither scrolled off nor clipped on wide tables. getCommonStyles adds the
+  // sticky offset, background and shadow once the table overflows horizontally.
+  useEffect(() => {
+    if (!leafColumns.some((column) => column.id === "actions")) return;
+    const pinned = table.reactTable.getState().columnPinning;
+    if (pinned?.right?.includes("actions")) return;
+    table.reactTable.setColumnPinning((prev) => ({
+      ...prev,
+      right: ["actions"],
+    }));
+  }, [leafColumns, table]);
+
   const tableContainerRef = useRef<HTMLDivElement>(null);
   const tableRef = useRef<HTMLTableElement>(null);
   const [isOverflowing, setIsOverflowing] = useState({
@@ -84,7 +97,7 @@ export function DataTable<TData extends BaseRecord>({
       <div
         ref={tableContainerRef}
         className={cn(
-          "overflow-hidden rounded-xl border bg-card shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
+          "overflow-x-auto rounded-xl border bg-card shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
         )}
       >
         <Table ref={tableRef} style={{ tableLayout: "fixed", width: "100%" }}>
