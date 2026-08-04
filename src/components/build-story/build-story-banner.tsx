@@ -249,12 +249,6 @@ function PromptExplorer() {
     <div>
       <div className="flex flex-wrap items-center gap-1.5">
         <PromptToggle
-          active={open === "build"}
-          onClick={() => setOpen((o) => (o === "build" ? null : "build"))}
-          icon={<Sparkles className="size-3.5" />}
-          label={zh ? "从零复刻" : "Rebuild from scratch"}
-        />
-        <PromptToggle
           active={open === "connect"}
           onClick={() => setOpen((o) => (o === "connect" ? null : "connect"))}
           icon={<Bot className="size-3.5" />}
