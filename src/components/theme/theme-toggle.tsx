@@ -12,10 +12,11 @@ type ThemeToggleProps = {
 };
 
 export function ThemeToggle({ className }: ThemeToggleProps) {
-  const { theme, setTheme } = useTheme();
+  const { resolvedTheme, setTheme } = useTheme();
   const translate = useTranslate();
+  const isDark = resolvedTheme === "dark";
 
-  const toggleTheme = () => setTheme(theme === "dark" ? "light" : "dark");
+  const toggleTheme = () => setTheme(isDark ? "light" : "dark");
 
   return (
     <Button
@@ -40,7 +41,7 @@ export function ThemeToggle({ className }: ThemeToggleProps) {
           "transition-all",
           "duration-200",
           {
-            "-rotate-90 scale-0": theme === "dark",
+            "-rotate-90 scale-0": isDark,
           }
         )}
       />
@@ -54,13 +55,12 @@ export function ThemeToggle({ className }: ThemeToggleProps) {
           "transition-all",
           "duration-200",
           {
-            "rotate-0 scale-100": theme === "dark",
-            "rotate-90 scale-0": theme === "light",
+            "rotate-0 scale-100": isDark,
           }
         )}
       />
       <span className="sr-only">
-        {theme === "dark"
+        {isDark
           ? translate("theme.switchToLight", "Switch to light mode")
           : translate("theme.switchToDark", "Switch to dark mode")}
       </span>

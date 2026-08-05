@@ -37,5 +37,5 @@ export function AclGate({ children }: PropsWithChildren) {
     );
   }
 
-  return <LoadingState className="min-h-screen bg-background" />;
+  return <LoadingState fullscreen />;
 }
